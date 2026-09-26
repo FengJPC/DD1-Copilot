@@ -1,0 +1,28 @@
+{
+  "name": "dd1-agent-bridge",
+  "version": "0.2.1",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "analyze:log": "tsx src/cli/analyze-log.ts",
+    "observe:log": "tsx src/cli/observe-log.ts",
+    "mcp": "tsx src/mcp/stdio.ts",
+    "mcp:start": "node dist/mcp/stdio.js",
+    "copilot": "tsx src/copilot/stdio.ts",
+    "copilot:start": "node dist/copilot/stdio.js",
+    "copilot:live": "node scripts/live-session.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.1.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  }
+}

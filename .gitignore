@@ -1,0 +1,25 @@
+# Local game captures and run logs may contain personal save data.
+fixtures/captures/**
+!fixtures/captures/.gitkeep
+runs/**
+!runs/.gitkeep
+
+# Third-party source trees and local deployment backups stay outside a future
+# public repository. Keep only the provenance note for the references folder.
+references/*
+!references/README.md
+backups/**
+runtime/**
+!runtime/.gitkeep
+
+# Local machine configuration.
+.env
+config.local.json
+*.local.json
+
+# Generated build artifacts.
+dist/
+build/
+node_modules/
+.npm-cache/
+*.log
