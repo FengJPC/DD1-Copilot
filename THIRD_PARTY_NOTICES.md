@@ -15,10 +15,32 @@ data, trademarks, or other assets.
 
 Blindest Dungeon and modifications derived from it are separate from the
 MIT-licensed DD1 Copilot code. Upstream has not specified a standard
-project-wide license in the checked reference version. The public repository
-therefore excludes the upstream source tree, installers, and compiled DLLs by
-default. If they are distributed later, their provenance and applicable terms
-must remain clearly identified.
+project-wide license. A 2026-09-26 check of the current upstream `main` tree
+also found no root `LICENSE`, `COPYING`, SPDX declaration, or explicit grant to
+redistribute modified source or compiled binaries. The v0.10 statement is
+treated as permission to inspect, modify, and build locally; it is not treated
+as permission to publish our derived source or DLL under this repository's MIT
+license.
+
+The public repository therefore excludes the upstream source tree, installers,
+compiled DLLs, and patches containing derived upstream code. This means the
+current public repository is not yet a self-contained end-to-end build. After
+the upstream author adds a standard license or gives explicit redistribution
+permission, the intended publication form is a separate fork that preserves
+upstream history, attribution, and applicable notices. Full evidence and the
+release plan are recorded in
+[`docs/licensing/001-third-party-source-audit.md`](docs/licensing/001-third-party-source-audit.md).
+
+### Prism speech library bundled by Blindest Dungeon
+
+The Blindest Dungeon source tree includes Prism headers and notices under
+`Source/Mod/lib/prism`. Prism identifies its own code as MPL-2.0 and records
+separate notices for simdutf (Apache-2.0), Moderncom (MIT), dr_wav (public
+domain option), Djinni (Apache-2.0), concurrentqueue (simplified BSD), and
+{fmt} (MIT). These notices cover those components only and do not supply a
+license for Blindest Dungeon's own code. Any future distribution of the
+modified Blindest component must preserve the relevant Prism `NOTICE` and
+`LICENSES` material.
 
 ## Darkest Dungeon Save Editor
 
@@ -44,6 +66,19 @@ this repository.
 
 The wiki-derived knowledge JSON is not used or distributed by DD1 Copilot.
 The reference repository remains outside the public repository.
+
+## JavaScript build and runtime dependencies
+
+The repository declares, but does not vendor, these npm packages:
+
+- `@modelcontextprotocol/server`: MIT
+- `zod`: MIT
+- `@types/node`: MIT
+- `tsx`: MIT
+- `typescript`: Apache-2.0
+
+Their own license texts and notices apply when npm installs them. The root MIT
+license does not relicense those packages.
 
 ## Game ownership and affiliation
 

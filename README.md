@@ -4,7 +4,7 @@
 
 版本变化和当前待实机验收项见 [`CHANGELOG.md`](CHANGELOG.md)。当前 ID 接口和分层见 [`ID 动作契约`](docs/architecture/003-id-action-contract.md)，本轮审计见 [`审计记录`](docs/experiments/016-id-abstraction-audit.md)。
 
-> **初版发布范围**：本仓库发布 MIT 许可的 Copilot、Game MCP、状态归约、测试和开发脚本。运行时命令依赖本地修改的 Blindest Dungeon；由于上游尚未提供标准项目许可证，修改版源码、DLL、游戏文件和实机日志暂不随仓库分发。来源和边界见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+> **初版发布范围**：本仓库发布 MIT 许可的 Copilot、Game MCP、状态归约、测试和开发脚本。运行时命令依赖本地修改的 Blindest Dungeon；由于上游尚未明确允许再发布修改版源码和二进制，修改版源码、DLL、游戏文件和实机日志暂不随仓库分发。这会使当前公开版本无法单独完成端到端构建，待取得明确授权后将以保留上游历史的独立 fork 补齐。来源、依赖许可证和核查证据见 [第三方声明](THIRD_PARTY_NOTICES.md) 与 [第三方源码许可审计](docs/licensing/001-third-party-source-audit.md)。
 
 ## 当前能力
 

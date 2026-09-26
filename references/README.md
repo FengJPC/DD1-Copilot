@@ -20,6 +20,6 @@
 ## 使用边界
 
 - v0.10 release 已明确项目正式开源，并允许任何人检查或以任何方式修改代码，因此本地修改、构建和集成无需再等待授权；
-- 仓库根目录仍没有项目本体的 `LICENSE` 或 SPDX 标识，release 也没有明确修改版源码和 DLL 的再发布条件；公开仓库暂不纳入上游源码或修改版 DLL；
+- 2026-09-26 再次核查当前上游 `main`：仓库根目录仍没有项目本体的 `LICENSE` 或 SPDX 标识，release 也没有明确修改版源码和 DLL 的再发布条件；公开仓库暂不纳入上游源码、修改版 DLL 或含派生源码的补丁，详细证据见 [`docs/licensing/001-third-party-source-audit.md`](../docs/licensing/001-third-party-source-audit.md)；
 - `darkest-dungeon-mcp/data/knowledge` 中的非商业、相同方式共享条款与 ISC 源码条款分开处理；
 - 本项目第一版不采用参考 Bot 的硬编码战斗策略。

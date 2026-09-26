@@ -23,3 +23,9 @@ build/
 node_modules/
 .npm-cache/
 *.log
+
+# Third-party and locally built executables are published only after a
+# separate provenance and license review.
+*.dll
+*.exe
+*.jar
