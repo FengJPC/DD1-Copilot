@@ -1,13 +1,13 @@
-import { summarizeActionRecord, summarizeCombatTransition } from "./presentation.js";
-import { copilotActionSchema } from "./action-schema.js";
 import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
+import { copilotActionSchema } from "./action-schema.js";
+import { summarizeActionRecord, summarizeCombatTransition } from "./presentation.js";
 
 import { CampaignMemoryStore } from "./campaign-memory.js";
 import {
   CopilotEngine,
 } from "./engine.js";
-import { TacticalStateProjector } from "./tactical-projector.js";
+import { CopilotSession, DEFAULT_DECISION_TIMEOUT_MS } from "./session.js";
 
 const readOnlyAnnotations = {
   readOnlyHint: true,
@@ -28,14 +28,14 @@ function toolResult(value: Record<string, unknown>) {
   };
 }
 
-const COMBAT_DECISION_ACTIONS = new Set(["use_skill", "pass_turn", "move_hero"]);
+
 
 
 export function createDd1CopilotServer(
   engine: CopilotEngine,
   memory: CampaignMemoryStore,
+  session = new CopilotSession(engine, memory),
 ): McpServer {
-  const tacticalProjector = new TacticalStateProjector();
   const server = new McpServer(
     { name: "dd1-copilot", version: "0.2.1" },
     {
@@ -65,8 +65,7 @@ export function createDd1CopilotServer(
       annotations: readOnlyAnnotations,
     },
     async ({ mode, afterRevision }) => {
-      const state = await engine.getState(mode, afterRevision);
-      memory.observeState(state);
+      const state = await session.getState(mode, afterRevision);
       return toolResult(state);
     },
   );
@@ -83,11 +82,9 @@ export function createDd1CopilotServer(
       annotations: readOnlyAnnotations,
     },
     async ({ resetBaseline }) => {
-      if (resetBaseline) tacticalProjector.reset();
-      const state = await engine.getState("compact", 0);
-      memory.observeState(state);
-      const packet = tacticalProjector.project(state);
-      memory.observeTactical(packet);
+      if (resetBaseline) session.tactical.reset();
+      const state = await session.getState("compact", 0);
+      const packet = session.projectCombat(state);
       return toolResult(packet);
     },
   );
@@ -106,8 +103,7 @@ export function createDd1CopilotServer(
       annotations: readOnlyAnnotations,
     },
     async ({ mode, afterRevision, includeMap }) => {
-      const state = await engine.forceRefresh(mode, afterRevision, includeMap);
-      memory.observeState(state);
+      const state = await session.refresh(mode, afterRevision, includeMap);
       return toolResult(state);
     },
   );
@@ -124,7 +120,7 @@ export function createDd1CopilotServer(
         rationale: z.string().min(1).max(500).optional(),
         waitForNextDecision: z.boolean().default(true),
         includeEvidence: z.boolean().default(false),
-        waitTimeoutMilliseconds: z.number().int().min(1_000).max(60_000).default(45_000),
+        waitTimeoutMilliseconds: z.number().int().min(1_000).max(60_000).default(DEFAULT_DECISION_TIMEOUT_MS),
         action: copilotActionSchema,
       }),
       annotations: actionAnnotations,
@@ -138,32 +134,12 @@ export function createDd1CopilotServer(
       includeEvidence,
       waitTimeoutMilliseconds,
     }) => {
-      const record = await engine.act({
-        requestId,
-        expectedRevision,
-        action,
-        rationale,
-      });
-      memory.recordAction(record);
-      const actionView = includeEvidence ? record : summarizeActionRecord(record);
-      const shouldWait =
-        waitForNextDecision &&
-        record.outcome === "success" &&
-        COMBAT_DECISION_ACTIONS.has(record.action.kind);
-      if (!shouldWait) return toolResult({ action: actionView });
-
-      const wait = await engine.waitForNextCombatDecision(waitTimeoutMilliseconds);
-      const state = await engine.getState("compact", 0);
-      memory.observeState(state);
-      const nextDecision =
-        wait.status === "ready" ? tacticalProjector.project(state) : undefined;
-      if (nextDecision?.available === true) memory.observeTactical(nextDecision);
+      const result = await session.execute({ requestId, expectedRevision, action, rationale },
+        { waitForNextDecision, waitTimeoutMilliseconds });
       return toolResult({
-        action: actionView,
-        transition: summarizeCombatTransition(wait),
-        nextDecision,
-        nextState: wait.status === "combat_ended" ? state : undefined,
-        reconciled: wait.status === "timeout" ? state : undefined,
+        ...result,
+        action: includeEvidence ? result.action : summarizeActionRecord(result.action),
+        transition: result.transition ? summarizeCombatTransition(result.transition) : undefined,
       });
     },
   );

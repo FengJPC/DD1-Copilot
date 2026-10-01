@@ -6,6 +6,7 @@ export const copilotActionSchema = z.discriminatedUnion("kind", [
     locationId: z.string().min(1).max(80),
   }),
   z.strictObject({ kind: z.literal("open_embark") }),
+  z.strictObject({ kind: z.literal('return_to_town') }),
   z.strictObject({
     kind: z.literal("select_embark_quest"),
     questIndex: z.number().int().min(0).max(0x7fffffff).optional(),
@@ -122,6 +123,13 @@ export const copilotActionSchema = z.discriminatedUnion("kind", [
     slot: z.number().int().min(1).max(16),
   }),
   z.strictObject({ kind: z.literal("open_building_upgrades") }),
+  z.strictObject({ kind: z.literal('prepare_town_treatment'), activityId: z.string().min(1).max(64),
+    slot: z.number().int().min(1).max(16), heroGuid: z.number().int().positive().max(0xffffffff) }),
+  z.strictObject({ kind: z.literal('choose_town_treatment'), activityId: z.string().min(1).max(64),
+    slot: z.number().int().min(1).max(16), heroGuid: z.number().int().positive().max(0xffffffff),
+    quirkId: z.string().min(1).max(80), mode: z.union([z.literal(1), z.literal(2)]) }),
+  z.strictObject({ kind: z.literal('confirm_town_treatment'), activityId: z.string().min(1).max(64),
+    slot: z.number().int().min(1).max(16), heroGuid: z.number().int().positive().max(0xffffffff) }),
   z.strictObject({
     kind: z.literal("buy_building_upgrade"),
     trackId: z.string().min(1).max(96),
@@ -138,6 +146,7 @@ export const copilotActionSchema = z.discriminatedUnion("kind", [
     actorGuid: z.number().int().positive().max(0xffffffff),
   }),
   z.strictObject({ kind: z.literal("dismiss_modal") }),
+  z.strictObject({ kind: z.literal('choose_dialog_option'), optionIndex: z.number().int().min(0).max(3) }),
   z.strictObject({ kind: z.literal("cancel_targeting") }),
   z.strictObject({ kind: z.literal("pass_turn") }),
   z.strictObject({

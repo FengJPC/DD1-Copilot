@@ -16,6 +16,8 @@ Copilot 是模型使用的中间层。模型决定做什么；Copilot 负责给�
 - `revision`：下一次 `act` 必须原样带回；
 - `phase` 和 `context`：当前界面阶段；
 - `decision`：当前问题、技能或城镇选项和目标候选；
+- `activeDialog`：当前确认弹窗的完整正文、回答数量及可靠解析的选项；正文也直接进入 `decision.prompt`。使用 `choose_dialog_option { optionIndex }` 选择当前已知回答，按游戏内部元素 ID 执行。未知标签格式保留全文，不猜测回答；离开窗口后清除旧提示。
+- `advisories`：按当前场景生成的提醒。出征和补给界面包含 `prepare_trinkets`，按当前队伍 GUID 显示两格饰品；`equipped` 为已读取的装备、`empty` 为已确认空槽、`unknown` 为未读到或读取失败。这是装备检查提醒，不表示 Copilot 已配置好饰品，现阶段装卸仍需人工协助。
 - `combat`：当前行动者、双方单位的状态/抗性、技能槽及其完整说明、最近结算；
 - `map`：首次地下城状态中的完整已知拓扑、房间/走廊、可见内容和访问状态；
 - `room.props` 与 `inventory`：当前可交互物件、背包容量/占用数及非空格；
@@ -70,9 +72,19 @@ Copilot 是模型使用的中间层。模型决定做什么；Copilot 负责给�
 `use_skill`、`pass_turn` 和 `move_hero` 成功后，`act` 默认继续等待到下一名可操作英雄或战斗结束。可选参数：
 
 - `waitForNextDecision`：默认 `true`；设为 `false` 时只返回本次动作的结算；
-- `waitTimeoutMilliseconds`：交接等待上限，默认 45000，范围 1000–60000。
+- `waitTimeoutMilliseconds`：交接等待上限，默认 30000，范围 1000–60000。MCP 和实机助手共用该约定；收到下一次稳定的决策状态即返回。
 
 同一 `requestId` 和完全相同的请求可安全重取结果，不会再次发送输入。同一 ID 对应不同请求会在发送前失败。revision 已变化时也会在发送前失败。
+
+城镇取消活动可能返回 `action.awaitingConfirmation=true`、`stage=workflow` 和 `nextState`。这表示取消请求成功打开确认框，活动尚未取消。必须读取正文并明确选择回答；不自动确认。回答后若来源为城镇设施，中间层刷新设施状态，并通过 `nextState` 返回实际结果。
+
+疗养院怪癖治疗分为三步，每步等待新的完整设施快照再核对：
+
+- `prepare_town_treatment { activityId, slot, heroGuid }`：将当前有资格的英雄放入待治疗槽，不提交消费。
+- `choose_town_treatment { activityId, slot, heroGuid, quirkId, mode }`：选择当前已读取的怪癖，`mode=1` 锁定，`mode=2` 移除。可选项和费用来自 `buildingDetails.treatments`，不要自行猜测活动或怪癖 ID。
+- `confirm_town_treatment { activityId, slot, heroGuid }`：核对待治疗英雄、已选择治疗与总费用，调用内部提交函数，并验证 `committedHeroGuid`。需要取消时使用 `cancel_town_activity`。
+
+`return_to_town` 可从远征和补给阶段返回城镇，当前为 Escape 兼容路径；每次转换分别核对，出现弹窗即停止。其他场景不开放此动作。升级、购物、治疗及活动动作需要新版 DLL 的资格/价格/能力信息；旧 DLL 缺少这些字段时不推测消费选项。
 
 `use_skill` 示例：
 

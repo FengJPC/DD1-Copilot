@@ -104,6 +104,7 @@ function parsedRecord(record: BlindestLogRecord): CopilotRecord {
   const kind = record.event?.kind;
   const critical =
     kind === "context_changed" ||
+    kind === 'confirmation_dialog_observed' ||
     kind === "building_opened" ||
     kind === "embark_ready" ||
     kind === "embark_quest_selected" ||

@@ -4,6 +4,22 @@ export interface EventBase {
 }
 
 export type BlindestEvent =
+  | (EventBase & { kind: 'building_capabilities_observed'; canUpgrade: boolean })
+  | (EventBase & { kind: 'building_shop_currency_observed'; currency: string })
+  | (EventBase & { kind: 'roster_capacity_observed'; rosterCount: number; rosterCapacity: number })
+  | (EventBase & { kind: 'recruit_profile_observed'; heroAddress: string; heroClass: string; level: number; healthText: string; stressText: string })
+  | (EventBase & { kind: 'recruit_detail_observed'; heroAddress: string; category: 'quirk' | 'disease'; line: number; text: string })
+  | (EventBase & { kind: 'building_activity_candidate_observed'; activityId: string; slot: number; heroGuid: number; name: string; known: boolean; eligible: boolean; affordable: boolean; priceKnown: boolean; price: number; currency: string; reason: string })
+  | (EventBase & { kind: 'building_activity_kind_observed'; activityId: string; slot: number; treatment: boolean })
+  | (EventBase & { kind: 'town_treatment_observed'; activityId: string; slot: number; quirkId: string; mode: number; name: string; chosen: boolean; priceKnown: boolean; price: number; currency: string })
+  | (EventBase & { kind: 'building_hero_step_metadata_observed'; optionId: string; code: string; available: boolean; costKnown: boolean; lockReason: string })
+  | (EventBase & { kind: 'building_cost_observed'; owner: 'hero' | 'facility'; id: string; code: string; currency: string; amount: number })
+  | (EventBase & { kind: 'building_hero_effect_observed'; optionId: string; column: number; line: number; text: string })
+  | (EventBase & { kind: 'building_facility_metadata_observed'; track: number; available: boolean; costKnown: boolean; description: string })
+  | (EventBase & {
+      kind: 'roster_trinket_observed'; heroGuid: number; slot: number;
+      status: 'empty' | 'equipped' | 'unknown'; itemId: string; name: string; effects: string;
+    })
   | (EventBase & { kind: "preparation_snapshot_started"; section: "party" | "provision" })
   | (EventBase & { kind: "building_snapshot_started"; buildingId: string; mode: number })
   | (EventBase & { kind: "building_snapshot_completed"; buildingId: string })
@@ -13,6 +29,12 @@ export type BlindestEvent =
     })
   | (EventBase & { kind: "provision_wallet_observed"; gold: number; shards: number; bagTotal: number })
   | (EventBase & { kind: "context_changed"; context: string })
+  | (EventBase & {
+      kind: "confirmation_dialog_observed";
+      text: string;
+      answerCount: number;
+      options: Array<{ optionIndex: number; label: string; inputHint: string; elementId: string }>;
+    })
   | (EventBase & {
       kind: "building_opened";
       buildingId: string;

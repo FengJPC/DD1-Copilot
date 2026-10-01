@@ -45,6 +45,7 @@ export interface ActionRecord {
   steps: ActionStepRecord[];
   observations: BlindestLogRecord[];
   deduplicated?: boolean;
+  awaitingConfirmation?: boolean;
 }
 
 export interface GameGateway {

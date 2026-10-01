@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { parseBlindestLine } from "../blindest/parse-line.js";
-import { initialCombatState, reduceCombatState } from "../state/combat-state.js";
+import { initialGameState, reduceGameState } from "../state/game-state.js";
 
 const input = process.argv[2];
 if (!input) {
@@ -15,7 +15,7 @@ const events = text.split(/\r?\n/u).flatMap((line) => {
   const event = parseBlindestLine(line);
   return event ? [event] : [];
 });
-const state = events.reduce(reduceCombatState, initialCombatState());
+const state = events.reduce(reduceGameState, initialGameState());
 const counts = Object.fromEntries(
   [...new Set(events.map((event) => event.kind))]
     .sort()

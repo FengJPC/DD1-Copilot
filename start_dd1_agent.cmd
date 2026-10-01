@@ -2,7 +2,7 @@
 setlocal
 title DD1 Agent Launcher
 
-"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\start_agent_game.ps1"
+"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\start_agent_game.ps1" %*
 set "launch_exit=%ERRORLEVEL%"
 
 if not "%launch_exit%"=="0" (
@@ -14,6 +14,6 @@ if not "%launch_exit%"=="0" (
 )
 
 echo.
-echo DD1 Agent started. The game may take a few seconds to appear.
-timeout /t 5 /nobreak >nul
+echo DD1 Agent launcher completed.
+timeout /t 5 /nobreak >nul 2>nul
 exit /b 0

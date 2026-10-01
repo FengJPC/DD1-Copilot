@@ -4,6 +4,10 @@
 
 版本变化和当前待实机验收项见 [`CHANGELOG.md`](CHANGELOG.md)。当前 ID 接口和分层见 [`ID 动作契约`](docs/architecture/003-id-action-contract.md)，本轮审计见 [`审计记录`](docs/experiments/016-id-abstraction-audit.md)。
 
+源码维护入口和两个模型入口的共同事务流程见 [运行结构](docs/architecture/004-runtime-structure.md)。
+
+本轮更新已通过 113 项测试和 TypeScript 构建；结构拆分及确认弹窗已有城镇实测记录。新增的城镇资格、费用、疗养院原生操作及饰品读数需要匹配的本地修改版 DLL，仍待重启游戏实机验收，详见 [城镇修复与验收计划](docs/experiments/022-town-hardening-and-trinket-reminder.md)。
+
 > **初版发布范围**：本仓库发布 MIT 许可的 Copilot、Game MCP、状态归约、测试和开发脚本。运行时命令依赖本地修改的 Blindest Dungeon；由于上游尚未明确允许再发布修改版源码和二进制，修改版源码、DLL、游戏文件和实机日志暂不随仓库分发。这会使当前公开版本无法单独完成端到端构建，待取得明确授权后将以保留上游历史的独立 fork 补齐。来源、依赖许可证和核查证据见 [第三方声明](THIRD_PARTY_NOTICES.md) 与 [第三方源码许可审计](docs/licensing/001-third-party-source-audit.md)。
 
 ## 当前能力
@@ -67,7 +71,8 @@ npm run mcp
 
 需要启动带命名管道和静音设置的游戏时，直接双击仓库根目录的
 `start_dd1_agent.cmd`。该入口会调用 `scripts/start_agent_game.ps1`；启动失败时窗口会保留错误信息。
-启动前设置 `DD1_GAME_DIR` 为游戏的 `DarkestDungeon\_windows\win64` 目录。
+启动器依次使用 `-GameDirectory`/`DD1_GAME_DIR`、仓库根目录的 `launcher.local.json` 中的 `gameDirectory`，或自动识别 Steam 游戏库。可以指定游戏根目录或 `_windows\win64`；本地配置不会提交 Git。迁移游戏后更新本地配置即可。
+用 `start_dd1_agent.cmd -CheckOnly` 可检查路径而不启动游戏。
 
 Copilot 复用相同的日志和命名管道配置，对 Codex 暴露带 revision 保护和语义结算的接口：
 
@@ -95,6 +100,9 @@ npm run copilot
 当前语义动作：
 
 - `open_town_location(locationId)`；
+- `return_to_town()`，从远征或补给界面逐步返回并核对界面变化；
+- `choose_dialog_option(optionIndex)`，提供确认框正文与回答标签，核对回答后的状态；
+- `prepare_town_treatment(activityId, slot, heroGuid)`、`choose_town_treatment(activityId, slot, heroGuid, quirkId, mode)` 和 `confirm_town_treatment(activityId, slot, heroGuid)`，分别准备治疗、选择怪癖处理和确认提交；
 - `travel_to_room(roomId)`，目标房间必须由模型从相邻房间列表中明确选择；
 - `advance_corridor()`、`enter_room()` 和 `return_to_previous_room()`；
 - `approach_room_prop(propIndex)` 和 `interact_room_prop(propIndex, heroGuid)`；普通奇物与陷阱都会先按稳定英雄 GUID 选择并核对实际交互者；
@@ -119,6 +127,8 @@ npm run copilot
 
 房间或走廊里存在活动物件时，`decision` 会先给出接近或交互动作，暂时隐藏继续前进和路线选择。事件界面只会把游戏内存已确认兼容的背包物品列为 `use_item_on_event`，以免误耗补给。
 
+出征和补给界面通过 `advisories.prepare_trinkets` 提醒配置当前队伍的饰品，按英雄 GUID 显示两格装备，并区分已装备、空槽和未知。当前尚无经过实机核验的饰品装卸动作，需要人工协助配置。
+
 战利品窗口在背包已满且目标物品确实无法并入现有堆叠时，才会提供 `replace_inventory_with_loot(inventorySlot, itemIndex)`，由 Copilot 完成丢弃指定背包格、返回战利品窗口和拾取指定物品。单件拾取后会立即刷新背包和剩余战利品，避免下一次决策沿用拾取前缓存。低于 50 的光照会在 `advisories` 中给出显著提示，并附带当前火把数量；是否点火仍由模型决定。
 
 本地实机调试可在完成 `npm run build` 后启动持久会话：
@@ -129,7 +139,7 @@ $env:DD1_COMMAND_PIPE = "\\.\pipe\dd1-agent-bridge"
 npm run copilot:live
 ```
 
-该进程逐行接收 JSON。`{"op":"state","project":"summary"}` 返回紧凑状态；`{"op":"act_current","requestId":"...","action":{...}}` 在进程内读取最新 revision 后执行一次动作。战斗动作默认组成一个完整事务：执行与核对本次动作，等待到下一次玩家决策，再直接返回精简的 `transition` 与 `nextDecision`。调试时可传 `"waitForNextDecision":false` 只等待本次动作结算；`waitTimeoutMilliseconds` 只表示最长交接等待并限制在 30 秒内，新的玩家决策一出现就立即返回。它保留同一个日志源和 Copilot 实例，用于降低实机回合间延迟。`resume` 默认只读取战役概览，`hero_memory` 按 GUID 展开一名英雄；`reflect`、`memory_status` 和 `export_memory` 分别用于写入复盘、检查数据库和导出 Markdown。诊断时可用 `{"op":"resume","detail":"full"}` 读取完整存储视图。
+该进程逐行接收 JSON。`{"op":"state","project":"summary"}` 返回紧凑状态；`{"op":"act_current","requestId":"...","action":{...}}` 在进程内读取最新 revision 后执行一次动作。战斗动作默认组成一个完整事务：执行与核对本次动作，等待到下一次玩家决策，再直接返回精简的 `transition` 与 `nextDecision`。调试时可传 `"waitForNextDecision":false` 只等待本次动作结算；`waitTimeoutMilliseconds` 只表示最长交接等待，默认 30 秒，可显式指定 1–60 秒，新的玩家决策一出现就立即返回。它保留同一个日志源和 Copilot 实例；启动前应先停止同一游戏管道对应的另一 Copilot 进程。输入 EOF 或 `stop` 会关闭数据库、取消等待并释放进程所有权。`resume` 默认只读取战役概览，`hero_memory` 按 GUID 展开一名英雄；`reflect`、`memory_status` 和 `export_memory` 分别用于写入复盘、检查数据库和导出 Markdown。诊断时可用 `{"op":"resume","detail":"full"}` 读取完整存储视图。
 
 调用方应在读到一行完整 JSON 后立即处理响应。不要把终端或管道的最长等待窗口当成固定动作延迟；若短等待内尚未收到完整行，再继续轮询同一请求。战斗动作出现伤害、治疗或增益等语义证据后，若行动者与 `turnTick` 尚未变化，状态会暂时返回 `combat_resolving` 且不提供动作选项，避免动画期间对旧回合重复下令。
 

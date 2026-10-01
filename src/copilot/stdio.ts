@@ -13,6 +13,9 @@ import { CampaignMemoryStore } from "./campaign-memory.js";
 import { createDd1CopilotServer } from "./create-server.js";
 import { CopilotEngine } from "./engine.js";
 import { LocalGameGateway } from "./local-game-gateway.js";
+import { registerProcessShutdown } from './process-lifecycle.js';
+import { acquireRuntimeLease } from './runtime-lease.js';
+import { CopilotSession } from './session.js';
 
 const configuredPath = process.env.DD1_BLINDEST_LOG?.trim();
 if (!configuredPath) {
@@ -26,11 +29,29 @@ const log = new CombatLogSource(resolve(configuredPath));
 const command = commandPipe
   ? new NamedPipeCommandTransport(commandPipe)
   : new UnavailableCommandTransport();
-const engine = new CopilotEngine(new LocalGameGateway(log, command));
-const memory = CampaignMemoryStore.fromEnvironment();
-
-serveStdio(() => createDd1CopilotServer(engine, memory), {
-  onerror(error) {
-    console.error(error);
-  },
-});
+const release = commandPipe ? await acquireRuntimeLease(commandPipe) : async () => { };
+try {
+  const engine = new CopilotEngine(new LocalGameGateway(log, command));
+  const memory = CampaignMemoryStore.fromEnvironment();
+  const session = new CopilotSession(engine, memory);
+  const handle = serveStdio(() => createDd1CopilotServer(engine, memory, session), {
+    onerror(error) { console.error(error); },
+  });
+  let stopTask: Promise<void> | undefined;
+  const shutdown = () => {
+    if (stopTask) return;
+    session.close();
+    stopTask = (async () => {
+      try { await handle.close(); } finally {
+        await release();
+        process.stdin.pause();
+        removeListeners();
+      }
+    })();
+    void stopTask.catch((error) => { console.error(error); process.exitCode = 1; });
+  };
+  const removeListeners = registerProcessShutdown(shutdown);
+} catch (error) {
+  await release();
+  throw error;
+}

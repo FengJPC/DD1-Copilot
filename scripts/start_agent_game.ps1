@@ -1,18 +1,14 @@
 param(
     [string]$GameDirectory = $env:DD1_GAME_DIR,
     [string]$PipeName = '\\.\pipe\dd1-agent-bridge',
-    [string]$ClientSid = ''
+    [string]$ClientSid = '',
+    [switch]$CheckOnly
 )
 
 $ErrorActionPreference = 'Stop'
 
-if (-not $GameDirectory) {
-    throw 'Pass -GameDirectory or set DD1_GAME_DIR to the DarkestDungeon\_windows\win64 directory.'
-}
-
-if (Get-Process -Name 'Darkest*' -ErrorAction SilentlyContinue) {
-    throw 'Darkest Dungeon is already running.'
-}
+. (Join-Path $PSScriptRoot 'resolve_game_directory.ps1')
+$GameDirectory = Resolve-Dd1GameDirectory -GameDirectory $GameDirectory
 
 $launcher = Join-Path $GameDirectory 'DarkestAccess.exe'
 if (-not (Test-Path -LiteralPath $launcher)) {
@@ -21,6 +17,17 @@ if (-not (Test-Path -LiteralPath $launcher)) {
 $game = Join-Path $GameDirectory 'Darkest.exe'
 if (-not (Test-Path -LiteralPath $game)) {
     throw "Game executable not found: $game"
+}
+
+if ($CheckOnly) {
+    Write-Host "[+] Game directory: $GameDirectory"
+    Write-Host "[+] Launcher: $launcher"
+    Write-Host '[+] Configuration checked. No process was started.'
+    return
+}
+
+if (Get-Process -Name 'Darkest*' -ErrorAction SilentlyContinue) {
+    throw 'Darkest Dungeon is already running.'
 }
 
 # Keep the command bridge opt-in: only this launcher process and its children

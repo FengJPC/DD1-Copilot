@@ -2,14 +2,14 @@ import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
 import type { BlindestEvent } from "../blindest/events.js";
+import type { CommandTransport } from "../command/transport.js";
 import type {
   BlindestLogRecord,
   CombatLogSnapshot,
   CombatLogSource,
 } from "../live/combat-log-source.js";
-import type { CombatState } from "../state/combat-state.js";
 import type { LiveSaveSource } from "../save/live-save-source.js";
-import type { CommandTransport } from "../command/transport.js";
+import type { GameState } from "../state/game-state.js";
 
 const readOnlyAnnotations = {
   readOnlyHint: true,
@@ -34,7 +34,7 @@ function withoutRaw<T extends BlindestEvent>(event: T): Omit<T, "raw"> {
   return rest;
 }
 
-function structuredState(state: CombatState) {
+function structuredState(state: GameState) {
   return {
     ...state,
     targets: state.targets.map(withoutRaw),

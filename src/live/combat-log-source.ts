@@ -6,10 +6,10 @@ import {
   parseLogEnvelope,
 } from "../blindest/parse-line.js";
 import {
-  initialCombatState,
-  reduceCombatState,
-  type CombatState,
-} from "../state/combat-state.js";
+  initialGameState,
+  reduceGameState,
+  type GameState,
+} from "../state/game-state.js";
 
 export interface BlindestLogRecord {
   revision: number;
@@ -23,7 +23,7 @@ export interface BlindestLogRecord {
 export interface CombatLogSnapshot {
   revision: number;
   observedAt: string;
-  state: CombatState;
+  state: GameState;
   source: {
     kind: "blindest_log";
     path: string;
@@ -43,13 +43,13 @@ export class CombatLogSource {
   private fileIdentity?: string;
   private consumedAnchor = Buffer.alloc(0);
   private revision = 0;
-  private state = initialCombatState();
+  private state = initialGameState();
   private readonly recentRecords: BlindestLogRecord[] = [];
 
   constructor(
     readonly path: string,
     private readonly recentRecordLimit = 2_000,
-  ) {}
+  ) { }
 
   refresh(): Promise<CombatLogSnapshot> {
     // MCP reads, action verification and transition waits share one log cursor.
@@ -112,7 +112,7 @@ export class CombatLogSource {
       this.revision += 1;
       const envelope = parseLogEnvelope(line);
       const event = parseBlindestLine(line);
-      if (event) this.state = reduceCombatState(this.state, event);
+      if (event) this.state = reduceGameState(this.state, event);
 
       this.recentRecords.push({
         revision: this.revision,
@@ -137,7 +137,7 @@ export class CombatLogSource {
     this.offset = 0;
     this.revision += 1; // Revision is monotonic across file generations.
     this.consumedAnchor = Buffer.alloc(0);
-    this.state = initialCombatState();
+    this.state = initialGameState();
     this.recentRecords.length = 0;
   }
 
