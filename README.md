@@ -6,6 +6,8 @@
 
 源码维护入口和两个模型入口的共同事务流程见 [运行结构](docs/architecture/004-runtime-structure.md)。
 
+游戏存档、中间层事实、AI 复盘和临时遥测的保存边界，以及固定存档绑定、旧库备份/归档流程，见 [存储与保留规则](docs/architecture/005-storage-and-retention.md)。
+
 本轮更新已通过 113 项测试和 TypeScript 构建；结构拆分及确认弹窗已有城镇实测记录。新增的城镇资格、费用、疗养院原生操作及饰品读数需要匹配的本地修改版 DLL，仍待重启游戏实机验收，详见 [城镇修复与验收计划](docs/experiments/022-town-hardening-and-trinket-reminder.md)。
 
 > **初版发布范围**：本仓库发布 MIT 许可的 Copilot、Game MCP、状态归约、测试和开发脚本。运行时命令依赖本地修改的 Blindest Dungeon；由于上游尚未明确允许再发布修改版源码和二进制，修改版源码、DLL、游戏文件和实机日志暂不随仓库分发。这会使当前公开版本无法单独完成端到端构建，待取得明确授权后将以保留上游历史的独立 fork 补齐。来源、依赖许可证和核查证据见 [第三方声明](THIRD_PARTY_NOTICES.md) 与 [第三方源码许可审计](docs/licensing/001-third-party-source-audit.md)。
@@ -76,6 +78,8 @@ npm run mcp
 
 Copilot 复用相同的日志和命名管道配置，对 Codex 暴露带 revision 保护和语义结算的接口：
 
+启动前还须绑定要操作的存档。可以在仓库根目录创建不提交 Git 的 `memory.local.json`，填写 `campaignId` 和 `saveDirectory`；也可以显式设置 `DD1_SAVE_DIR`，或为隔离测试指定 `DD1_CAMPAIGN_ID`。已绑定的存档会复用同一个 SQLite；未配置时不再写入 `local-default`。同一进程切换存档时，应停止 Copilot 并改用对应存档配置。
+
 ```powershell
 $env:DD1_BLINDEST_LOG = "C:\path\to\DarkestDungeon\_windows\win64\ddaccess-debug.log"
 $env:DD1_COMMAND_PIPE = "\\.\pipe\dd1-agent-bridge"
@@ -143,7 +147,7 @@ npm run copilot:live
 
 调用方应在读到一行完整 JSON 后立即处理响应。不要把终端或管道的最长等待窗口当成固定动作延迟；若短等待内尚未收到完整行，再继续轮询同一请求。战斗动作出现伤害、治疗或增益等语义证据后，若行动者与 `turnTick` 尚未变化，状态会暂时返回 `combat_resolving` 且不提供动作选项，避免动画期间对旧回合重复下令。
 
-长期数据库默认位于 `%LOCALAPPDATA%\DD1AgentBridge\campaigns\<campaignId>\campaign.sqlite`。`campaignId` 优先取 `DD1_CAMPAIGN_ID`，否则取 `DD1_SAVE_DIR` 的目录名；可用 `DD1_MEMORY_DB` 指定数据库位置。活动 SQLite/WAL 文件应留在本地目录，Markdown 导出可放进项目或坚果云。
+长期数据库默认位于 `%LOCALAPPDATA%\DD1AgentBridge\campaigns\<campaignId>\campaign.sqlite`。首次显式绑定 ID，或依据完整存档路径的哈希生成 ID；绑定登记和数据库内的存档目录共同阻止串档或重复写入临时数据库。`DD1_MEMORY_DB` 只能在首次绑定时指定位置，已绑定的存档继续沿用原位置。活动 SQLite/WAL 文件应留在本地目录，Markdown 导出可放进项目或坚果云。导出包含独立的 `reflections.md`。
 
 Copilot 不包含自动战斗策略或战斗风格评分器。Codex 负责每一次战斗、探索和城镇决策；中间层只整理事实、列出可用语义动作、执行一次并验证结算。
 

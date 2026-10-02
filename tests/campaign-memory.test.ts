@@ -147,8 +147,9 @@ test("campaign memory survives restart and only appends changed hero profiles", 
     );
 
     const exported = reopened.exportMarkdown(join(directory, "export"));
-    assert.equal(exported.files.length, 3);
+    assert.equal(exported.files.length, 4);
     assert.ok(existsSync(join(directory, "export", "campaign.md")));
+    assert.match(readFileSync(join(directory,'export','reflections.md'),'utf8'),/优先处理压力怪/u);
     assert.match(
       readFileSync(join(directory, "export", "heroes.md"), "utf8"),
       /GUID 4242/u,

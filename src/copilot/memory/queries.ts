@@ -12,6 +12,15 @@ function parseJson<T>(value: unknown, fallback: T): T {
 /** Read-only campaign projections; the store owns writes and database lifetime. */
 export class CampaignQueries {
   constructor(private readonly database: DatabaseSync, private readonly campaignId: string, private readonly path: string, private readonly activeExpedition: () => string | undefined) { }
+  getPendingReviews(limit = 3) {
+    return this.database.prepare(`SELECT e.expedition_id,e.ended_at,e.end_revision,e.quest_json,e.summary_json FROM expeditions e
+      WHERE e.campaign_id=? AND e.status='complete' AND NOT EXISTS (
+        SELECT 1 FROM reflections r WHERE r.campaign_id=e.campaign_id AND r.expedition_id=e.expedition_id AND r.kind='expedition_review'
+      ) ORDER BY e.ended_at DESC LIMIT ?`).all(this.campaignId, limit).map(row => ({
+        expeditionId: String(row.expedition_id), endedAt: row.ended_at, evidenceRevision: row.end_revision,
+        quest: parseJson(row.quest_json, undefined), summary: parseJson(row.summary_json, undefined),
+      }));
+  }
   buildExpeditionSummary(expeditionId: string): Record<string, unknown> {
     const outcomes = this.database
       .prepare(
@@ -82,7 +91,7 @@ export class CampaignQueries {
       });
     const reflections = this.database
       .prepare(
-        `SELECT id, created_at, kind, title, body, hero_guid,
+        `SELECT id, created_at, kind, title, body, hero_guid, expedition_id,
                 evidence_json, tags_json
          FROM reflections WHERE campaign_id=?
          ORDER BY created_at DESC, id DESC LIMIT ?`,
@@ -97,6 +106,7 @@ export class CampaignQueries {
           title: typed.title,
           body: typed.body,
           heroGuid: typed.hero_guid ?? undefined,
+          expeditionId: typed.expedition_id ?? undefined,
           evidenceRevisions: parseJson(typed.evidence_json, []),
           tags: parseJson(typed.tags_json, []),
         };
@@ -131,6 +141,7 @@ export class CampaignQueries {
       decisions,
       reflections,
       expeditions,
+      pendingReviews: this.getPendingReviews(),
     };
   }
   getCampaignOverview(limits: {
@@ -237,6 +248,7 @@ export class CampaignQueries {
       recentDecisions: decisions,
       plans,
       recentExpeditions: expeditions,
+      pendingReviews: this.getPendingReviews(),
       hint:
         "Call get_hero_memory only when a decision needs one hero's full profile or history.",
     };
@@ -331,6 +343,9 @@ export class CampaignQueries {
       databasePath: this.path,
       activeExpeditionId: this.activeExpedition(),
       counts,
+      binding: this.database.prepare('SELECT save_directory AS saveDirectory FROM campaign_binding WHERE campaign_id=?').get(this.campaignId),
+      storageCategories: ['game_save', 'copilot_facts', 'ai_reflections', 'temporary_telemetry'],
+      pendingReviewCount: (this.database.prepare(`SELECT COUNT(*) AS n FROM expeditions e WHERE e.campaign_id=? AND e.status='complete' AND NOT EXISTS (SELECT 1 FROM reflections r WHERE r.campaign_id=e.campaign_id AND r.expedition_id=e.expedition_id AND r.kind='expedition_review')`).get(this.campaignId) as {n:number}).n,
     };
   }
 }

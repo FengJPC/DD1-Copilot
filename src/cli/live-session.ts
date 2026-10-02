@@ -48,7 +48,7 @@ export async function runLiveSession(): Promise<void> {
       let id = 'parse';
       const startedAt = Date.now();
       try {
-        const request: unknown = JSON.parse(line);
+        const request: unknown = JSON.parse(line.trim());
         if (request && typeof request === 'object' && 'id' in request) id = String(request.id);
         else id = 'request';
         const result = await handler.handle(request);

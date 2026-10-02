@@ -33,14 +33,9 @@ export function exportCampaignJournal(outputDirectory: string, resume: JournalPa
       "",
       "## 近期复盘",
       "",
-      ...resume.reflections.flatMap((item) => [
-        `### ${String(item.title)}`,
-        "",
-        `${String(item.body)}`,
-        "",
-        `类型：${String(item.kind)}；时间：${String(item.createdAt)}`,
-        "",
-      ]),
+      ...resume.reflections.map(item=>`- ${String(item.createdAt)}｜${String(item.kind)}｜${String(item.title)}`),
+      "",
+      "复盘正文与证据见 [AI 复盘](reflections.md)。",
     ].join("\n"),
   );
 
@@ -88,5 +83,15 @@ export function exportCampaignJournal(outputDirectory: string, resume: JournalPa
       ]),
     ].join("\n"),
   );
+  writeAtomic('reflections.md',[
+    '# AI 复盘与计划','',
+    ...resume.reflections.flatMap(item=>[
+      `## ${String(item.title)}`,'',String(item.body),'',
+      `- 类型：${String(item.kind)}；时间：${String(item.createdAt)}`,
+      `- 远征：${String(item.expeditionId ?? '未关联')}；英雄 GUID：${String(item.heroGuid ?? '未关联')}`,
+      `- 证据 revision：${JSON.stringify(item.evidenceRevisions ?? [])}`,
+      `- 标签：${JSON.stringify(item.tags ?? [])}`,'',
+    ]),
+  ].join('\n'));
   return { directory, files };
 }

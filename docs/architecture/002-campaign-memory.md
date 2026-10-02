@@ -2,6 +2,8 @@
 
 日期：2026-09-25
 
+2026-10-02 已整理为四类存储并补齐存档绑定、城镇/准备阶段档案同步、远征事实收尾与复盘关联。当前保存边界、实际采集字段及迁移方法以 [存储与保留规则](005-storage-and-retention.md) 为准；下文分工中的理想字段不代表每个场景都已有完整读数。
+
 ## 分工
 
 中间层负责可核对事实，我负责战略解释。两类内容都由中间层落盘，避免模型上下文压缩、任务重启或版本更新造成遗失。
@@ -37,7 +39,7 @@
 
 使用本地 SQLite 保存实体、快照和追加事件；长文本简报可同时导出 Markdown 供人查看。SQLite 是事实源，Markdown 是可读视图。
 
-活动数据库默认位于 `%LOCALAPPDATA%\DD1AgentBridge\campaigns\<campaignId>\campaign.sqlite`，避免 SQLite 的 WAL 文件与坚果云同步互相干扰；可用 `DD1_MEMORY_DB` 覆盖。需要人工查看或备份时，调用导出接口把 `campaign.md`、`heroes.md` 和 `expeditions.md` 原子写入项目目录。
+活动数据库默认位于 `%LOCALAPPDATA%\DD1AgentBridge\campaigns\<campaignId>\campaign.sqlite`，避免 SQLite 的 WAL 文件与坚果云同步互相干扰；首次绑定时可用 `DD1_MEMORY_DB` 指定位置，之后保持固定对应。需要人工查看时，调用导出接口把 `campaign.md`、`heroes.md`、`expeditions.md` 和 `reflections.md` 原子写入项目目录。完整 SQLite 备份使用 backup API，不能只复制可能尚有 WAL 的主文件。
 
 ## 已实现接口
 

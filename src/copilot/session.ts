@@ -26,25 +26,41 @@ export class CopilotSession {
     this.ensureOpen();
     const state = await this.engine.getState(mode, afterRevision);
     this.ensureOpen();
-    this.memory.observeState(state);
+    this.observe(state);
     if (state.phase !== 'combat' && state.phase !== 'targeting') this.tactical.reset();
-    return state;
+    return this.withMemoryAdvisories(state);
   }
 
   async refresh(mode: 'compact' | 'delta' | 'full' = 'compact', afterRevision = 0, includeMap = false) {
     this.ensureOpen();
     const state = await this.engine.forceRefresh(mode, afterRevision, includeMap);
     this.ensureOpen();
-    this.memory.observeState(state);
+    this.observe(state);
     if (state.phase !== 'combat' && state.phase !== 'targeting') this.tactical.reset();
-    return state;
+    return this.withMemoryAdvisories(state);
   }
 
   projectCombat(state: CopilotState): ReturnType<TacticalStateProjector['project']> {
     this.ensureOpen();
     const packet = this.tactical.project(state);
-    if (packet.available) this.memory.observeTactical(packet);
+    if (packet.available && !this.engine.observedSnapshot?.state.circusCombat?.active) this.memory.observeTactical(packet);
     return packet;
+  }
+
+  private observe(state: CopilotState) {
+    if (this.engine.observedSnapshot) this.memory.observeSnapshot(this.engine.observedSnapshot);
+    else this.memory.observeState(state);
+  }
+
+  private withMemoryAdvisories(state: CopilotState): CopilotState {
+    if (!['town','building','embark','provision'].includes(state.phase ?? '')) return state;
+    const pending = this.memory.getPendingReviews(1);
+    if (!pending.length) return state;
+    return { ...state, advisories: [...state.advisories, {
+      kind: 'review_expedition', message: '远征已收尾，请根据事实简报写入 AI 复盘。',
+      expeditionId: pending[0]!.expeditionId, evidenceRevision: pending[0]!.evidenceRevision,
+      summary: pending[0]!.summary,
+    }] };
   }
 
   async execute(request: ActionRequest, options: SessionActionOptions = {}): Promise<SessionActionResult> {
@@ -61,6 +77,11 @@ export class CopilotSession {
       }
       const result = await this.inFlight.promise;
       return { ...result, action: { ...result.action, deduplicated: true } };
+    }
+    const persisted=this.memory.getRecordedAction(request.requestId);
+    if(persisted) {
+      if(actionSignature(persisted)!==signature) throw new Error('requestId already exists in this campaign with different action/revision. No input was sent.');
+      return {action:{...persisted,deduplicated:true},reconciled:await this.getState('compact',0)};
     }
     const promise = this.executeOnce(request, options);
     this.inFlight = { requestId: request.requestId, signature, promise };
@@ -79,6 +100,7 @@ export class CopilotSession {
     const action = await this.engine.act(request);
     this.ensureOpen();
     this.memory.recordAction(action);
+    this.memory.observeSnapshot(await this.engine.readSnapshot());
     const shouldWait = options.waitForNextDecision !== false &&
       action.outcome === 'success' && COMBAT_DECISIONS.has(action.action.kind);
     const transition = shouldWait

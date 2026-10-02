@@ -149,6 +149,12 @@ Copilot 依次执行：
 
 返回最近十次或本次会话的语义动作、结果计数、分步证据和当前阶段。它用于复盘执行可靠性，不生成战术评分。
 
+## 长期记录与复盘关联
+
+启动要求明确战役/存档绑定，不再默认使用 `local-default`。所有状态档位使用内部完整观察更新长期人物资料，delta 裁剪不会阻止事实落盘。远征返回城镇后，`advisories.review_expedition` 给出待复盘远征的 `expeditionId`、结束证据 revision 和事实摘要；`get_campaign_resume`/`resume` 返回最近待复盘项。
+
+`record_reflection`/`reflect` 支持可选 `expeditionId`。`expedition_review` 必须关联本战役已结束远征；省略 ID 时选择最近未复盘的已结束记录。写入后对应待复盘提示消失。模型自己写正文，中间层不自动代写战略分析。Markdown 导出新增独立 `reflections.md`。保存边界与迁移工具见 [存储规则](../architecture/005-storage-and-retention.md)。
+
 ## 结果解释
 
 | 结果 | 含义 | 后续 |

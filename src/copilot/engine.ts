@@ -32,6 +32,9 @@ import { townTreatment } from './workflows/treatment.js';
 export type { CombatDecisionWaitResult, CopilotEngineOptions } from './execution-types.js';
 
 export class CopilotEngine {
+  private lastObservedSnapshot?: CombatLogSnapshot;
+  get observedSnapshot(): CombatLogSnapshot | undefined { return this.lastObservedSnapshot; }
+  async readSnapshot(): Promise<CombatLogSnapshot> { return this.game.refresh(); }
   private readonly lifetime = new PollingLifetime();
   private readonly game: GameGateway;
 
@@ -95,6 +98,7 @@ export class CopilotEngine {
 
   async getState(mode: 'compact' | 'delta' | 'full' = 'compact', afterRevision = 0) {
     const snapshot = await this.observation.getSnapshot();
+    this.lastObservedSnapshot = snapshot;
     this.reconcilePendingCombatTransition(snapshot.state);
     return projectState(snapshot, mode, afterRevision, this.game.recordsAfter.bind(this.game), this.pendingCombatTransition);
   }

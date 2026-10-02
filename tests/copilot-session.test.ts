@@ -29,6 +29,48 @@ async function fixture(t: TestContext, initial: string, transportFactory: (path:
   return { path, transport, engine, memory, session };
 }
 
+test('delta queries still persist full preparation profiles and surface completed expedition review', async t=>{
+  const {path,session,memory}=await fixture(t, '[ 1] axcontext -> townmap\n', ()=>new FakeCommandTransport(async()=>{}));
+  const baseline=await session.getState();
+  await appendFile(path, [
+    '[ 2] axcontext -> embark',
+    '[ 3] agent-state: begin',
+    '[ 4] roster probe: row 0 entry=ABC "雷蒙德" state=0 building="" missing=0 hero_guid=1',
+    '[ 5] agent-prep: roster_profile guid=1 name="雷蒙德" class="crusader" level=2 health="30/30" stress="10/200" weapon=1 armour=1',
+    '[ 6] agent-prep: roster_detail guid=1 category=quirk line=0 text="盗窃癖"',
+    '[ 7] agent-state: end', '',
+  ].join('\n'));
+  await session.getState('delta',baseline.revision);
+  const hero=memory.getHeroMemory(1) as {found:boolean;heroClass:string;currentProfile:{level:number}};
+  assert.equal(hero.found,true); assert.equal(hero.heroClass,'crusader'); assert.equal(hero.currentProfile.level,2);
+  await appendFile(path,'[ 8] axcontext -> room\n'); await session.getState();
+  await appendFile(path,'[ 9] axcontext -> townmap\n');
+  const town=await session.getState();
+  assert.ok(town.advisories.some(row=>row.kind==='review_expedition'));
+  const expeditionId=memory.getPendingReviews()[0]!.expeditionId;
+  memory.addReflection({kind:'expedition_review',title:'测试回城',body:'观察结束，尚未判定任务胜利。',expeditionId});
+  const reviewed=await session.getState();
+  assert.ok(!reviewed.advisories.some(row=>row.kind==='review_expedition'));
+});
+
+test('restart reuses a persisted action without resending input or overwriting its history', async t=>{
+  const {path,session,memory,transport}=await fixture(t,'[ 1] axcontext -> pause\n', log=>new FakeCommandTransport(async command=>{
+    if(command.kind==='key_press') await appendFile(log,'[ 2] axcontext -> townmap\n');
+  }));
+  const state=await session.getState();
+  const request={requestId:'persisted-dismiss',expectedRevision:state.revision,action:{kind:'dismiss_modal' as const}};
+  const first=await session.execute(request); assert.equal(first.action.outcome,'success');
+  session.close();
+  const reopenedMemory=new CampaignMemoryStore({path:memory.path,campaignId:'test'});
+  const engine=new CopilotEngine(new LocalGameGateway(new CombatLogSource(path),transport),{inspectionTimeoutMilliseconds:10,pollIntervalMilliseconds:1});
+  const reopened=new CopilotSession(engine,reopenedMemory); t.after(()=>reopened.close());
+  const replay=await reopened.execute(request);
+  assert.equal(replay.action.deduplicated,true); assert.equal(replay.action.completedAt,first.action.completedAt);
+  assert.equal((transport as FakeCommandTransport).commands.filter(command=>command.kind==='key_press').length,1);
+  await assert.rejects(reopened.execute({...request,expectedRevision:999}),/already exists/);
+  reopened.close();
+});
+
 test('fresh observation rejects unavailable input rather than returning an old snapshot', async (t) => {
   let submitted = 0;
   const { engine } = await fixture(t, '[ 1] axcontext -> pause\n[ 2] agent-state: end\n', () => ({

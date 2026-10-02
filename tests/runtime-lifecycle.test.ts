@@ -60,6 +60,8 @@ test('live helper stops, releases its lease and permits an immediate restart', {
   const { launch, directory } = await setup(t);
   const first = launch();
   await first.waitForOutput(/"ready":true/);
+  first.child.stdin.write('\uFEFF{"id":"bom-status","op":"memory_status"}\n');
+  await first.waitForOutput(/"id":"bom-status","ok":true/);
   const duplicate = launch();
   const duplicateResult = await duplicate.closed;
   assert.equal(duplicateResult.code, 1);

@@ -110,4 +110,27 @@ export function installCampaignSchema(database: DatabaseSync): void {
       CREATE INDEX IF NOT EXISTS reflections_campaign_created
         ON reflections(campaign_id, created_at DESC, id DESC);
     `);
+  const version = database.prepare('SELECT version FROM schema_meta').get() as { version: number };
+  if(version.version>2) throw new Error('Campaign database schema is newer than this Copilot version.');
+  if (version.version < 2) {
+    database.exec(`BEGIN IMMEDIATE;
+      CREATE TABLE hero_observations_v2 (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, campaign_id TEXT NOT NULL, hero_guid INTEGER NOT NULL,
+        expedition_id TEXT, revision INTEGER NOT NULL, observed_at TEXT NOT NULL,
+        profile_hash TEXT NOT NULL, payload_json TEXT NOT NULL,
+        FOREIGN KEY(campaign_id,hero_guid) REFERENCES heroes(campaign_id,hero_guid),
+        FOREIGN KEY(expedition_id) REFERENCES expeditions(expedition_id)
+      );
+      INSERT INTO hero_observations_v2 SELECT * FROM hero_observations;
+      DROP TABLE hero_observations;
+      ALTER TABLE hero_observations_v2 RENAME TO hero_observations;
+      CREATE INDEX hero_observations_hero ON hero_observations(campaign_id,hero_guid,id DESC);
+      CREATE TABLE campaign_binding (
+        campaign_id TEXT PRIMARY KEY, save_directory TEXT NOT NULL UNIQUE,
+        FOREIGN KEY(campaign_id) REFERENCES campaigns(campaign_id)
+      );
+      ALTER TABLE expeditions ADD COLUMN result_json TEXT;
+      UPDATE schema_meta SET version=2;
+      COMMIT;`);
+  }
 }

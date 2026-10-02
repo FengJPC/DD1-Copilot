@@ -194,6 +194,7 @@ export function createDd1CopilotServer(
         title: z.string().min(1).max(160),
         body: z.string().min(1).max(8_000),
         heroGuid: z.number().int().positive().optional(),
+        expeditionId: z.string().min(1).max(128).optional(),
         evidenceRevisions: z.array(z.number().int().nonnegative()).max(100).optional(),
         tags: z.array(z.string().min(1).max(80)).max(32).optional(),
       }),

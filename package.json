@@ -14,7 +14,8 @@
     "mcp:start": "node dist/mcp/stdio.js",
     "copilot": "tsx src/copilot/stdio.ts",
     "copilot:start": "node dist/copilot/stdio.js",
-    "copilot:live": "node scripts/live-session.mjs"
+    "copilot:live": "node scripts/live-session.mjs",
+    "memory:maintain": "tsx src/cli/maintain-memory.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.1.0",
