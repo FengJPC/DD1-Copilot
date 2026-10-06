@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
+import { VERSION } from '../version.js';
 
 import type { BlindestEvent } from "../blindest/events.js";
 import type { CommandTransport } from "../command/transport.js";
@@ -63,7 +64,7 @@ function toolResult(value: Record<string, unknown>) {
 
 export function createDd1GameServer(sources: Dd1GameServerSources): McpServer {
   const server = new McpServer(
-    { name: "dd1-game-mcp", version: "0.2.1" },
+    { name: "dd1-game-mcp", version: VERSION },
     {
       capabilities: { tools: {} },
       instructions: [

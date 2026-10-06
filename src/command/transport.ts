@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { createConnection } from "node:net";
+import { StringDecoder } from 'node:string_decoder';
 
 export interface GameCommand {
   kind: string;
@@ -116,6 +117,7 @@ export class NamedPipeCommandTransport implements CommandTransport {
       const socket = createConnection(this.pipePath);
       let finished = false;
       let response = "";
+      const decoder = new StringDecoder('utf8');
       let sent = false;
       const finish = (ack: CommandAcknowledgement) => {
         if (finished) return;
@@ -140,7 +142,7 @@ export class NamedPipeCommandTransport implements CommandTransport {
         socket.write(`${JSON.stringify(envelope)}\n`);
       });
       socket.on("data", (chunk: Buffer) => {
-        response += chunk.toString("utf8");
+        response += decoder.write(chunk);
         const newline = response.indexOf("\n");
         if (response.length > 64 * 1024) {
           clearTimeout(timer);
@@ -158,6 +160,9 @@ export class NamedPipeCommandTransport implements CommandTransport {
             throw new Error("Acknowledgement commandId did not match the request.");
           }
           const status = parsed.status;
+          if (parsed.reason !== undefined && typeof parsed.reason !== 'string') {
+            throw new Error('Acknowledgement reason must be a string. Execution is unknown.');
+          }
           if (status !== "accepted" && status !== "queued" && status !== "rejected") {
             throw new Error("Acknowledgement contained an invalid status.");
           }
@@ -187,6 +192,12 @@ export class NamedPipeCommandTransport implements CommandTransport {
           receivedAt: new Date().toISOString(),
           reason: error.message,
         });
+      });
+      socket.once('end', () => {
+        if (finished) return;
+        clearTimeout(timer);
+        finish({ commandId: envelope.commandId, transport: 'named_pipe', status: sent ? 'timeout' : 'unavailable',
+          receivedAt: new Date().toISOString(), reason: 'Command pipe closed before acknowledgement; execution is unknown.' });
       });
     });
   }

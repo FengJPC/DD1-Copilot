@@ -9,6 +9,7 @@ import { CampaignQueries } from './memory/queries.js';
 import { installCampaignSchema } from './memory/schema.js';
 import { normalizeSaveDirectory, registerMemoryConfiguration, resolveMemoryConfiguration } from './memory/storage-config.js';
 import { collectHeroProfiles } from './memory/profile-observation.js';
+import { mergeHeroProfile } from './memory/merge-profile.js';
 import { durableActionRecord } from './memory/action-evidence.js';
 import type { CombatLogSnapshot } from '../live/combat-log-source.js';
 
@@ -288,15 +289,12 @@ export class CampaignMemoryStore {
 
   private observeHero(heroGuid: number, name: string, update: Record<string, unknown>, revision: number, timestamp: string): void {
     const existing = this.database.prepare('SELECT first_seen_at,profile_hash,profile_json,hero_class FROM heroes WHERE campaign_id=? AND hero_guid=?').get(this.campaignId, heroGuid) as { first_seen_at: string; profile_hash: string; profile_json: string; hero_class?: string } | undefined;
-    const defined = Object.fromEntries(Object.entries(update).filter(([,value]) => value !== undefined));
     const prior=existing ? JSON.parse(existing.profile_json) : {};
-    const payload = { ...prior, ...defined, name,
-      ...(defined.training ? {training:{...prior.training,...defined.training as object}} : {}),
-    };
+    const payload = mergeHeroProfile(prior, update, name);
     const hash = digest(payload);
     this.database.prepare(`INSERT INTO heroes(campaign_id,hero_guid,name,hero_class,first_seen_at,last_seen_at,latest_revision,profile_hash,profile_json)
       VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(campaign_id,hero_guid) DO UPDATE SET name=excluded.name,hero_class=excluded.hero_class,last_seen_at=excluded.last_seen_at,latest_revision=excluded.latest_revision,profile_hash=excluded.profile_hash,profile_json=excluded.profile_json`)
-      .run(this.campaignId,heroGuid,name,payload.heroClass ?? existing?.hero_class ?? null,existing?.first_seen_at ?? timestamp,timestamp,revision,hash,stableJson(payload));
+      .run(this.campaignId,heroGuid,name,typeof payload.heroClass === 'string' ? payload.heroClass : existing?.hero_class ?? null,existing?.first_seen_at ?? timestamp,timestamp,revision,hash,stableJson(payload));
     if (existing?.profile_hash !== hash) this.database.prepare('INSERT INTO hero_observations(campaign_id,hero_guid,expedition_id,revision,observed_at,profile_hash,payload_json) VALUES (?,?,?,?,?,?,?)')
       .run(this.campaignId,heroGuid,this.activeExpeditionId ?? null,revision,timestamp,hash,stableJson(payload));
   }

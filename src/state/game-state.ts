@@ -32,6 +32,11 @@ export type GamePhase =
 
 export interface GameState {
   phase: GamePhase;
+  equipment?: {
+    complete: boolean; nativeControl: boolean;
+    items: Array<{ inventorySlot: number; itemId: string; name: string; effects: string;
+      classRequirement: string; amount: number }>;
+  };
   currentContext?: string;
   modalSourcePhase?: GamePhase;
   currentBuilding?: string;

@@ -1,6 +1,11 @@
 import { z } from "zod";
 
 export const copilotActionSchema = z.discriminatedUnion("kind", [
+  z.strictObject({ kind: z.literal('equip_trinket'), heroGuid: z.number().int().positive().max(0xffffffff),
+    itemId: z.string().min(1).max(63), slot: z.union([z.literal(0), z.literal(1)]),
+    inventorySlot: z.number().int().min(0).max(4095).optional() }),
+  z.strictObject({ kind: z.literal('unequip_trinket'), heroGuid: z.number().int().positive().max(0xffffffff),
+    slot: z.union([z.literal(0), z.literal(1)]), itemId: z.string().min(1).max(63) }),
   z.strictObject({
     kind: z.literal("open_town_location"),
     locationId: z.string().min(1).max(80),

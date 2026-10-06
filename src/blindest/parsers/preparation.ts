@@ -3,6 +3,14 @@ import type { BlindestEvent, ParsedLogLine } from '../events.js';
 export function parsePreparation(line: ParsedLogLine): BlindestEvent | undefined {
   const base = { tick: line.tick, raw: line.raw };
   let match: RegExpExecArray | null;
+  if (line.message.startsWith('agent-equipment: unavailable ')) return { ...base, kind: 'equipment_unavailable' };
+  match = /^agent-equipment: begin native_control=([01])$/u.exec(line.message);
+  if (match) return { ...base, kind: 'equipment_snapshot_started', nativeControl: match[1] === '1' };
+  match = /^agent-equipment: end items=(\d+)$/u.exec(line.message);
+  if (match) return { ...base, kind: 'equipment_snapshot_completed', itemCount: Number(match[1]) };
+  match = /^agent-equipment: item slot=(\d+) amount=(\d+) id="([^"]*)" name="([^"]*)" effects="([^"]*)" class="([^"]*)"$/u.exec(line.message);
+  if (match) return { ...base, kind: 'equipment_item_observed', inventorySlot: Number(match[1]), amount: Number(match[2]),
+    itemId: match[3] ?? '', name: match[4] ?? '', effects: match[5] ?? '', classRequirement: match[6] ?? '' };
   match = /^agent-prep: trinket guid=(\d+) slot=([01]) status=(empty|equipped|unknown) id="([^"]*)" name="([^"]*)" effects="([^"]*)"$/u.exec(line.message);
   if (match) return {
     ...base, kind: 'roster_trinket_observed', heroGuid: Number(match[1]), slot: Number(match[2]),

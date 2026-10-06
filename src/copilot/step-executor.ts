@@ -19,6 +19,7 @@ export class StepExecutor {
     evaluate: (
       snapshot: CombatLogSnapshot,
       observations: BlindestLogRecord[],
+      commandId: string,
     ) => StepEvaluation | undefined,
     timeoutMilliseconds = this.settlementTimeoutMilliseconds,
   ): Promise<StepResult> {
@@ -82,7 +83,7 @@ export class StepExecutor {
           },
         };
       }
-      const evaluation = evaluate(snapshot, observations);
+      const evaluation = evaluate(snapshot, observations, acknowledgement.commandId);
       if (evaluation !== undefined) {
         return {
           snapshot,

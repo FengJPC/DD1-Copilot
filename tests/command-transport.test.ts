@@ -55,3 +55,26 @@ test("corrupt acknowledgements after submission remain uncertain", async () => {
     assert.match(acknowledgement.reason ?? "", /commandId/);
   } finally { await new Promise<void>((resolve) => server.close(() => resolve())); }
 });
+
+for (const scenario of ['split_utf8', 'invalid_reason', 'closed_pipe'] as const) {
+  test(`command acknowledgement audit: ${scenario}`, async () => {
+    const path = `\\\\.\\pipe\\dd1-ack-audit-${process.pid}-${randomUUID()}`;
+    const server = createServer(socket => socket.once('data', data => {
+      const request = JSON.parse(data.toString('utf8'));
+      if (scenario === 'closed_pipe') { socket.end(); return; }
+      const payload = Buffer.from(JSON.stringify({ commandId: request.commandId, status: 'queued',
+        reason: scenario === 'invalid_reason' ? { bad: true } : '游戏线程已接收' }) + '\n');
+      if (scenario === 'split_utf8') {
+        const split = payload.indexOf(Buffer.from('游')) + 1;
+        socket.write(payload.subarray(0, split));
+        setTimeout(() => socket.end(payload.subarray(split)), 10);
+      } else socket.end(payload);
+    }));
+    await new Promise<void>((resolve, reject) => { server.once('error', reject); server.listen(path, resolve); });
+    try {
+      const ack = await new NamedPipeCommandTransport(path, 2_000).send({ kind: 'inspect_state', args: {} });
+      assert.equal(ack.status, scenario === 'split_utf8' ? 'queued' : 'timeout');
+      assert.match(ack.reason ?? '', scenario === 'split_utf8' ? /游戏线程已接收/u : scenario === 'invalid_reason' ? /reason must be a string/ : /closed before acknowledgement/);
+    } finally { await new Promise<void>(resolve => server.close(() => resolve())); }
+  });
+}

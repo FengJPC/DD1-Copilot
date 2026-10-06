@@ -47,7 +47,9 @@ test('suspicious town health is marked unverified without rewriting the raw read
   state.partyPlanning = { slots: [], rosterCandidates: [{ row: 0, heroGuid: 11, name: '莫干斯',
     state: 0, building: '', missing: false, healthText: '1/22 生命：' }] };
   const warning = preparationAdvisories(state).find(item => item.kind === 'verify_town_health');
-  assert.deepEqual(warning?.heroes, [{ heroGuid: 11, name: '莫干斯', rawHealthText: '1/22 生命：' }]);
+  assert.deepEqual(warning?.heroes, [{ heroGuid: 11, name: '莫干斯', health: {
+    source: 'town_actor', currentHpVerified: false, maxHp: 22,
+  } }]);
   assert.equal(state.partyPlanning.rosterCandidates[0]?.healthText, '1/22 生命：');
   state.phase = 'room';
   assert.deepEqual(preparationAdvisories(state), []);

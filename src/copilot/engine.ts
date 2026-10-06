@@ -30,6 +30,7 @@ import { buyProvision, continueLoading, formEmbarkParty, openEmbark, proceedToPr
 import { chooseQuestCompletion, continueResults, useQuestControl } from './workflows/results.js';
 import { assignTownActivity, buyBuildingUpgrade, buyHeroUpgrade, buyTownItem, cancelTownActivity, closeBuilding, openBuildingUpgrades, openTownLocation, recruitStageCoachHero, selectBuildingHero } from './workflows/town.js';
 import { townTreatment } from './workflows/treatment.js';
+import { changeTrinket } from './workflows/equipment.js';
 export type { CombatDecisionWaitResult, CopilotEngineOptions } from './execution-types.js';
 
 export class CopilotEngine {
@@ -199,6 +200,10 @@ export class CopilotEngine {
 
     try {
       switch (request.action.kind) {
+        case 'equip_trinket':
+        case 'unequip_trinket':
+          result = await changeTrinket(this.workflowContext, request.action, before, steps);
+          break;
         case "open_town_location":
           result = await openTownLocation(this.workflowContext, request.action, before, steps);
           break;

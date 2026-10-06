@@ -20,7 +20,7 @@ npm run plugin:package
 
 `-FromProject` 导入已有 `launcher.local.json` 与 `memory.local.json`；首次设置可显式指定游戏和存档目录。插件设置与数据库存放在本机，缓存更新不会删除档案。安装后刷新/重启 Codex；若当前聊天尚未发现工具，进入新聊天。匹配的游戏 DLL 仍需单独部署，安装插件不会安装游戏或自动开始操作。详细前提、设置覆盖规则、验收范围见 [插件安装与结构](docs/architecture/006-codex-plugin.md)。
 
-当前 0.2.3 修复了城镇台词造成的无效版本冲突、人物档案/饰品箱遮挡识别，以及 delta 中重复的任务说明。已通过 136 项测试和 TypeScript 检查；插件已有独立 MCP 协议验证与 Codex 宿主九项工具发现记录。0.2.3 还用本次真实日志确认饰品箱只返回关闭操作，后续游戏操作需刷新插件会话继续验收。实际状态变化仍拒绝旧指令，单会话控制与不确定动作保护保留；本次无需更换 DLL。城镇生命读数归一化、饰品装备接口仍待实机完善，详见 [恢复测试记录](docs/experiments/025-plugin-town-resume.md)。
+当前 0.2.4 将城镇生命标记为“当前值未核实”，补全按英雄 GUID 和物品 ID 的原生饰品装卸、库存双向核对，并审计档案、观察缓存、命令传输和部署一致性。158 项自动测试及 TypeScript 检查/构建通过；本地 DLL 编译成功。本版本需要配套新 DLL；装卸属性刷新及存档持久化仍待实机验收，不能由离线测试证明。详见 [本轮审计](docs/experiments/026-project-audit.md) 和 [生命与饰品契约](docs/architecture/007-equipment-and-health.md)。
 
 > **初版发布范围**：本仓库发布 MIT 许可的 Copilot、Game MCP、状态归约、测试和开发脚本。运行时命令依赖本地修改的 Blindest Dungeon；由于上游尚未明确允许再发布修改版源码和二进制，修改版源码、DLL、游戏文件和实机日志暂不随仓库分发。这会使当前公开版本无法单独完成端到端构建，待取得明确授权后将以保留上游历史的独立 fork 补齐。来源、依赖许可证和核查证据见 [第三方声明](THIRD_PARTY_NOTICES.md) 与 [第三方源码许可审计](docs/licensing/001-third-party-source-audit.md)。
 
@@ -118,6 +118,7 @@ npm run copilot
 - `open_town_location(locationId)`；
 - `return_to_town()`，从远征或补给界面逐步返回并核对界面变化；
 - `choose_dialog_option(optionIndex)`，提供确认框正文与回答标签，核对回答后的状态；
+- `equip_trinket(heroGuid,itemId,slot,inventorySlot?)`、`unequip_trinket(heroGuid,itemId,slot)`，从完整库存/人物快照按 ID 装卸，两格索引为 0/1；
 - `prepare_town_treatment(activityId, slot, heroGuid)`、`choose_town_treatment(activityId, slot, heroGuid, quirkId, mode)` 和 `confirm_town_treatment(activityId, slot, heroGuid)`，分别准备治疗、选择怪癖处理和确认提交；
 - `travel_to_room(roomId)`，目标房间必须由模型从相邻房间列表中明确选择；
 - `advance_corridor()`、`enter_room()` 和 `return_to_previous_room()`；

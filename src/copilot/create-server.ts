@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
+import { VERSION } from '../version.js';
 import { copilotActionSchema } from "./action-schema.js";
 import { summarizeActionRecord, summarizeCombatTransition } from "./presentation.js";
 
@@ -37,7 +38,7 @@ export function createDd1CopilotServer(
   session = new CopilotSession(engine, memory),
 ): McpServer {
   const server = new McpServer(
-    { name: "dd1-copilot", version: "0.2.3" },
+    { name: "dd1-copilot", version: VERSION },
     {
       capabilities: { tools: {} },
       instructions: [

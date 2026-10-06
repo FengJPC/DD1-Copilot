@@ -1,6 +1,6 @@
 {
   "name": "dd1-copilot",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Play Darkest Dungeon 1 through compact observations, verified actions and durable campaign memory.",
   "author": { "name": "FengJ", "url": "https://github.com/FengJPC" },
   "homepage": "https://github.com/FengJPC/DD1-Copilot",

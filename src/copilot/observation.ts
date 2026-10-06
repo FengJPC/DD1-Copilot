@@ -1,4 +1,5 @@
 import type { CombatLogSnapshot } from '../live/combat-log-source.js';
+import { ObservationCache } from './observation-cache.js';
 import type { PollingLifetime } from './cancellation.js';
 import type { CopilotEngineOptions } from './execution-types.js';
 import type { GameGateway } from './types.js';
@@ -24,13 +25,22 @@ export class ObservationCoordinator {
     this.observationWork = pending;
     try { return await pending; } finally { this.observationWork = undefined; }
   }
-  private readonly inspectionAttempts = new Set<string>();
-  private readonly mapInspectionAttempts = new Set<string>();
-  private readonly arrivalInspectionAttempts = new Set<string>();
-  private readonly contextInspectionAttempts = new Set<string>();
+  private readonly inspectionAttempts = new ObservationCache();
+  private readonly mapInspectionAttempts = new ObservationCache();
+  private readonly arrivalInspectionAttempts = new ObservationCache();
+  private readonly contextInspectionAttempts = new ObservationCache();
+  private sourceGeneration?: number;
+  private resetSourceCaches(snapshot: CombatLogSnapshot) {
+    if (snapshot.source.generation !== this.sourceGeneration) {
+      this.inspectionAttempts.clear(); this.mapInspectionAttempts.clear();
+      this.arrivalInspectionAttempts.clear(); this.contextInspectionAttempts.clear();
+      this.sourceGeneration = snapshot.source.generation;
+    }
+  }
   private observationWork?: Promise<CombatLogSnapshot>;
   private async inspectFresh(includeMap: boolean): Promise<CombatLogSnapshot> {
     let snapshot = await this.game.refresh();
+    this.resetSourceCaches(snapshot);
     if (!snapshot.source.available) throw new Error('Fresh observation failed: the primary log source is unavailable.');
     for (const kind of includeMap ? ['inspect_state', 'inspect_map'] as const : ['inspect_state'] as const) {
       const completedTick = (value: CombatLogSnapshot) => kind === 'inspect_map'
@@ -68,6 +78,7 @@ export class ObservationCoordinator {
   }
   private async refreshWithInspectionOnce(): Promise<CombatLogSnapshot> {
     let snapshot = await this.game.refresh();
+    this.resetSourceCaches(snapshot);
     if (this.isActionInFlight()) return snapshot;
     const actor = snapshot.state.currentActor;
     if (

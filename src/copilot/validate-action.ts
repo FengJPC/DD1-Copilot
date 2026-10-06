@@ -1,4 +1,5 @@
 import type { GameState } from "../state/game-state.js";
+import { equipmentFailure } from './equipment.js';
 import { isBlockingPanelContext } from '../state/blocking-panel.js';
 import { activityCandidate, canOpenBuildingUpgrades, facilityUpgradeFailure, heroUpgradeFailure, townPriceFailure, treatmentConfirmationFailure } from './town-availability.js';
 import { currentCombatant, inventoryTarget, resolveRequestedTarget, resolveSkill, roomPropHero } from "./identity.js";
@@ -18,6 +19,9 @@ export function validateAction(action: CopilotAction,
     return "Resolve the current overlay/targeting before operating the raid inventory.";
   }
   switch (action.kind) {
+    case 'equip_trinket':
+    case 'unequip_trinket':
+      return equipmentFailure(state, action);
     case "open_town_location": {
       if (state.phase !== "town") {
         return "A town location can only be opened from the town map.";

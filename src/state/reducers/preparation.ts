@@ -3,6 +3,22 @@ import type { GameState } from '../game-state.js';
 
 export function reducePreparation(state: GameState, next: GameState, event: BlindestEvent): boolean {
   switch (event.kind) {
+    case 'equipment_unavailable':
+      next.equipment = undefined;
+      break;
+    case 'equipment_snapshot_started':
+      next.equipment = { complete: false, nativeControl: event.nativeControl, items: [] };
+      break;
+    case 'equipment_item_observed':
+      if (state.equipment && !state.equipment.complete) next.equipment = { ...state.equipment,
+        items: [...state.equipment.items.filter(item => item.inventorySlot !== event.inventorySlot),
+          { inventorySlot: event.inventorySlot, amount: event.amount, itemId: event.itemId,
+            name: event.name, effects: event.effects, classRequirement: event.classRequirement }] };
+      break;
+    case 'equipment_snapshot_completed':
+      if (state.equipment) next.equipment = { ...state.equipment,
+        complete: event.itemCount === state.equipment.items.length };
+      break;
     case "embark_ready":
       next.expedition = {
         questCount: event.questCount,

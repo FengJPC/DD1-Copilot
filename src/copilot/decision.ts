@@ -1,4 +1,6 @@
 import type { GameState } from "../state/game-state.js";
+import { townHeroView } from './town-health.js';
+import { equipmentOptions } from './equipment.js';
 import { isBlockingPanelContext } from '../state/blocking-panel.js';
 import { buildingDetailsView, canOpenBuildingUpgrades, facilityUpgradeFailure, heroUpgradeFailure, townPriceFailure, treatmentConfirmationFailure } from './town-availability.js';
 import type { PendingCombatTransition } from './execution-types.js';
@@ -406,6 +408,7 @@ export function buildDecision(state: GameState, pendingCombatTransition?: Pendin
             name: location.name,
           })),
         { kind: "open_embark" as const, name: "远征" },
+        ...equipmentOptions(state),
       ],
     };
   }
@@ -416,13 +419,14 @@ export function buildDecision(state: GameState, pendingCombatTransition?: Pendin
       selectedQuestIndex: state.expedition?.selectedQuestIndex,
       roster: state.partyPlanning?.rosterCandidates.map(({ heroGuid, name, state, missing, building, heroClass, level,
         healthText, stressText, weaponLevel, armourLevel, quirks, diseases }) =>
-      ({
+      (townHeroView({
         heroGuid, name, state, missing, building, heroClass, level, healthText, stressText,
         weaponLevel, armourLevel, quirks, diseases
-      })),
+      }))),
       party: state.partyPlanning?.slots.map(({ position, heroGuid, name }) => ({ position, heroGuid, name })),
       locations: state.expedition?.locations ?? [],
       options: [
+        ...equipmentOptions(state),
         ...(state.expedition?.quests ?? [])
           .filter((quest) => quest.onScreen)
           .map((quest) => ({
@@ -469,6 +473,7 @@ export function buildDecision(state: GameState, pendingCombatTransition?: Pendin
         (item) => item.section === 1 && item.amount > 0,
       ),
       options: [
+        ...equipmentOptions(state),
         ...(state.provisioning?.items ?? [])
           .filter((item) => item.section === 0 && item.amount > 0)
           .map((item) => ({
@@ -522,7 +527,7 @@ export function buildDecision(state: GameState, pendingCombatTransition?: Pendin
       kind: "stage_coach",
       prompt: "Choose one available hero to recruit.",
       roster: state.recruitment,
-      candidates: state.buildingHeroes,
+      candidates: state.buildingHeroes.map(townHeroView),
       options: [
         ...(state.recruitment && state.recruitment.rosterCount < state.recruitment.rosterCapacity ? state.buildingHeroes : []).map((hero) => ({
           kind: "recruit_stage_coach_hero" as const,

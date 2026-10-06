@@ -25,7 +25,9 @@ Use the `dd1_copilot` MCP tools. The model owns strategic choices; Copilot perfo
 ## Town and expedition
 
 - Consider hero condition, stress, quirks, disease, skills, equipment and resources. Inspect missing decision-relevant details rather than treating omitted fields as healthy or empty.
+- Town `health.currentHpVerified=false` means current HP is unknown. Its `maxHp` is a town maximum; `lastRaidHealth` is historical, not current. Use fresh raid observations for combat HP.
 - Before departure, inspect the trinket advisory and equipped/empty/unknown slots; choose equipment or explicitly explain the choice to leave slots empty. Check party ranks, task and supplies.
+- With a complete equipment snapshot and `nativeControl=true`, use `equip_trinket(heroGuid,itemId,slot,inventorySlot?)` and `unequip_trinket(heroGuid,itemId,slot)`. Slots are 0 or 1; duplicate owned IDs require the current inventory slot. Unequip before replacing. Copilot verifies both the hero slot and owned stock in the command receipt; uncertain results require a refresh. These campaign actions are currently limited to the supported Steam build and single-item stacks.
 - Choose routes yourself using the initial map and subsequent location/visited changes. Traversal can continue until an event, enemy or door; do not delegate route selection to an automatic battle bot.
 - Track torchlight, food, inventory space, traps, curios and forced hero interactions. Use hero GUIDs and current target/item IDs; use the actual selected actor and verified result, since a quirk can take control of an interaction.
 - Trust automatic inventory compaction only when its result is verified. Resolve the curio/loot screen before taking items; reobserve remaining loot and space. Unknown health, outcomes or forced events remain unknown until observed.

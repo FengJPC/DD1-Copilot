@@ -20,7 +20,7 @@ export interface CombatDecisionWaitResult {
 }
 
 export interface StepEvaluation {
-  outcome: "success" | "failure";
+  outcome: "success" | "failure" | "uncertain";
   reason: string;
 }
 

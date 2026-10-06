@@ -1,6 +1,6 @@
 # ID 动作契约
 
-日期：2026-09-26。本文件描述当前实现；测试与部署状态另见实验 016。
+更新：2026-10-06。本文件描述当前实现；最新测试与部署状态见实验 026。
 
 ## 边界
 
@@ -20,7 +20,7 @@ GameGateway → 命名管道 → DLL 主线程：重新查询 ID、验证前置�
 日志 → 归约状态 → 战术摘要/动作摘要 → 模型
 ```
 
-`engine.ts` 仍包含按场景组织的工作流；共用契约、身份、物品事务和输出已抽离/合并。后续可按场景逐步拆文件，无需增加自动战斗决策器。
+`engine.ts` 协调版本检查、执行和回执；场景工作流在 `workflows/`，共用步骤执行、身份、物品事务与输出各自独立。
 
 ## 身份
 
@@ -31,6 +31,7 @@ GameGateway → 命名管道 → DLL 主线程：重新查询 ID、验证前置�
 | `skillElementId` | 当前行动者技能栏里的具体技能元素 | 当前行动栏；不当作永久技能 ID |
 | `questId` | 当前周可选任务 | 当前任务列表；重复 ID 会被拒绝 |
 | `itemKey` | 补给物品种类，例如 `food`、`torch` | 从当前补给列表读取 |
+| `itemId` | 饰品种类身份 | 当前库存或已装备槽；多份同 ID 用库存格区分 |
 | `inventorySlot` | 当前物品格 | 当前 revision；DLL 另核对 key 和原数量 |
 
 不能从名字、角色职业或队伍下标推测 ID。旧日志没有运行时 ID 时，食物与营地单体目标不会退回按键计数；旧战斗 side/slot 输入仍保留逐步目标预览核对的兼容路径。
@@ -71,7 +72,7 @@ GameGateway → 命名管道 → DLL 主线程：重新查询 ID、验证前置�
 - `failure`：校验拒绝、游戏拒绝或已观察到不符合预期的结果；先刷新再决定。
 - `uncertain`：超时、连接断开或证据不足；不要重发操作。
 
-同 ID、同请求在执行中共享结果，执行后从缓存读取；缓存有容量上限，且不跨进程持久化。旧 revision 仍会被拒绝。其他动作在执行期间拒绝；读取状态可继续，但不会插入自动地图操作。
+同 ID、同请求在执行中共享结果，执行后可从缓存及战役 SQLite 回执恢复；跨进程恢复不会重放已记载的请求。相同 ID 改动作或 revision 会被拒绝。旧 revision 遇到状态变化仍拒绝，完整且只有明确诊断的增量按专门规则放行。其他动作在执行期间拒绝；读取状态可继续，但不会插入自动地图操作。
 
 MCP `act` 默认返回动作、简短原因、版本、步骤结果；完整日志不在每次回合重复发送，`includeEvidence=true` 可显式展开。完整动作记录仍进入战役记忆。普通状态不自动混入存档解码。
 
@@ -84,7 +85,9 @@ MCP `act` 默认返回动作、简短原因、版本、步骤结果；完整日�
 | `commit_item_target` | `targetGuid, inventorySlot, expectedAmount, itemKey` | 选择器、当前物品身份/数量、唯一目标 |
 | `commit_camp_target` | `actorGuid, skillElementId, targetGuid` | 休整阶段、当前人物、已武装技能、目标 |
 | `assign_party_hero` | `heroGuid, position` | 活动远征界面、候选唯一、英雄可用、目标位置 |
-| `select_embark_quest` | `questId` | 当前可见任务唯一匹配 |
+| `select_embark_quest` | `questIndex` | 模型任务 ID/实例解析到当前唯一任务位置 |
 | `buy_provision` | `itemKey` | 当前商店唯一物品、库存、交易未处理中 |
+| `equip_trinket` | `heroGuid, slot, itemId, inventorySlot` | 阶段、构建、英雄、职业限制、空目标槽、源物品与数量 |
+| `unequip_trinket` | `heroGuid, slot, itemId` | 阶段、构建、英雄、已装备身份、仓库空格 |
 
 DLL 的 `agent-command: begin/end id=...` 只表示关联和游戏线程接收，不能单独证明消费、伤害或编队完成。物品额外输出实际使用者、物品格、调用结果与数量变化。

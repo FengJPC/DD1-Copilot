@@ -4,6 +4,11 @@ export interface EventBase {
 }
 
 export type BlindestEvent =
+  | (EventBase & { kind: 'equipment_unavailable' })
+  | (EventBase & { kind: 'equipment_snapshot_started'; nativeControl: boolean })
+  | (EventBase & { kind: 'equipment_snapshot_completed'; itemCount: number })
+  | (EventBase & { kind: 'equipment_item_observed'; inventorySlot: number; itemId: string;
+      name: string; effects: string; classRequirement: string; amount: number })
   | (EventBase & { kind: 'building_capabilities_observed'; canUpgrade: boolean })
   | (EventBase & { kind: 'building_shop_currency_observed'; currency: string })
   | (EventBase & { kind: 'roster_capacity_observed'; rosterCount: number; rosterCapacity: number })

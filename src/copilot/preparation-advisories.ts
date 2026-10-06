@@ -1,4 +1,5 @@
 import type { GameState } from '../state/game-state.js';
+import { townHealth } from './town-health.js';
 
 // A reminder is an observation of the current lineup, not a claim that the
 // party is equipped. Unknown slots remain unknown until a fresh native read.
@@ -17,15 +18,16 @@ export function preparationAdvisories(state: GameState): Array<Record<string, un
   const advisories: Array<Record<string, unknown>> = [{
     kind: 'prepare_trinkets',
     message: '出征前检查并配置四名英雄的饰品，结合任务、位置和技能选择；unknown 表示尚未核实，不能视为空槽或已配置。',
-    equipmentControl: 'manual_until_verified_equipment_action_available',
+    equipmentControl: state.equipment?.complete && state.equipment.nativeControl
+      ? 'native_id_actions' : 'refresh_updated_bridge_before_equipment_actions',
     party,
   }];
   const uncertainHealth = (state.partyPlanning?.rosterCandidates ?? [])
-    .filter(hero => /^1\s*\//u.test(hero.healthText ?? ''))
-    .map(hero => ({ heroGuid: hero.heroGuid, name: hero.name, rawHealthText: hero.healthText }));
+    .filter(hero => !!hero.healthText)
+    .map(hero => ({ heroGuid: hero.heroGuid, name: hero.name, health: townHealth(hero.healthText) }));
   if (uncertainHealth.length) advisories.push({
     kind: 'verify_town_health',
-    message: '这些城镇生命读数来自未归一化的 actor 字段，尚未确认是否代表出征生命；不能据此宣称濒死或满血。出征后用完整队伍状态核对。',
+    message: '城镇只报告已读取的最大生命；当前生命字段可能是未初始化值，不能用于判断濒死或满血。出征后由实时队伍状态提供当前生命。',
     heroes: uncertainHealth,
   });
   return advisories;

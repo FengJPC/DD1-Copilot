@@ -2,6 +2,7 @@ import type {
   CombatLogSnapshot
 } from "../live/combat-log-source.js";
 import { buildDecision } from './decision.js';
+import { townHeroView } from './town-health.js';
 import { buildingDetailsView } from './town-availability.js';
 import type { PendingCombatTransition } from './execution-types.js';
 import { filterCopilotRecords } from "./filter.js";
@@ -35,6 +36,9 @@ export function projectState(snapshot: CombatLogSnapshot, mode: 'compact' | 'del
   const compactRecords = filtered.records.map((record) => {
     if (record.event === undefined) return record;
     const { message: _message, ...withoutDuplicateMessage } = record;
+    if (record.event.kind === 'roster_profile_observed' || record.event.kind === 'recruit_profile_observed') {
+      return { ...withoutDuplicateMessage, event: townHeroView(record.event) };
+    }
     return withoutDuplicateMessage;
   });
   const mapChanged = requestedRecords.some(
@@ -119,7 +123,7 @@ export function projectState(snapshot: CombatLogSnapshot, mode: 'compact' | 'del
       : undefined,
     buildingDetails: buildingRelevant ? buildingDetailsView(snapshot.state) : undefined,
     buildingHeroes: buildingRelevant
-      ? snapshot.state.buildingHeroes
+      ? snapshot.state.buildingHeroes.map(townHeroView)
       : undefined,
     recruitment: buildingRelevant
       ? snapshot.state.recruitment
@@ -136,11 +140,14 @@ export function projectState(snapshot: CombatLogSnapshot, mode: 'compact' | 'del
         ? snapshot.state.expedition
         : undefined,
     partyPlanning:
-      snapshot.state.phase === "embark" ||
+      townRelevant || snapshot.state.phase === "embark" ||
         snapshot.state.phase === "provision" ||
         (snapshot.state.phase === "modal" && ['embark', 'provision'].includes(snapshot.state.modalSourcePhase ?? ''))
-        ? snapshot.state.partyPlanning
+        ? snapshot.state.partyPlanning && { ...snapshot.state.partyPlanning,
+            rosterCandidates: snapshot.state.partyPlanning.rosterCandidates.map(townHeroView) }
         : undefined,
+    equipment: ['town', 'embark', 'provision'].includes(snapshot.state.phase)
+      ? snapshot.state.equipment : undefined,
     provisioning:
       snapshot.state.phase === "provision" ||
         (snapshot.state.phase === "modal" && snapshot.state.modalSourcePhase === 'provision')

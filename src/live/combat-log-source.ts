@@ -33,6 +33,7 @@ export interface CombatLogSnapshot {
     earliestBufferedRevision?: number;
     latestRevision: number;
     parsedEventCount: number;
+    generation?: number;
     error?: string;
   };
 }
@@ -43,6 +44,7 @@ export class CombatLogSource {
   private fileIdentity?: string;
   private consumedAnchor = Buffer.alloc(0);
   private revision = 0;
+  private generation = 0;
   private state = initialGameState();
   private readonly recentRecords: BlindestLogRecord[] = [];
 
@@ -136,6 +138,7 @@ export class CombatLogSource {
   private reset(): void {
     this.offset = 0;
     this.revision += 1; // Revision is monotonic across file generations.
+    this.generation += 1;
     this.consumedAnchor = Buffer.alloc(0);
     this.state = initialGameState();
     this.recentRecords.length = 0;
@@ -162,6 +165,7 @@ export class CombatLogSource {
           : { earliestBufferedRevision: this.recentRecords[0].revision }),
         latestRevision: this.revision,
         parsedEventCount: this.state.eventCount,
+        generation: this.generation,
         ...(error === undefined
           ? {}
           : { error: error instanceof Error ? error.message : String(error) }),
