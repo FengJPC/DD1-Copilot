@@ -76,8 +76,10 @@ test('live helper stops, releases its lease and permits an immediate restart', {
   try { assert.equal(memory.getStatus().campaignId, 'test'); } finally { memory.close(); }
 });
 
-test('MCP and live helper share ownership and MCP exits on input EOF', { timeout: 15_000 }, async (t) => {
+test('MCP discovery works alongside a controlling helper and MCP exits on input EOF', { timeout: 15_000 }, async (t) => {
   const { launch } = await setup(t);
+  const live = launch();
+  await live.waitForOutput(/"ready":true/);
   const mcp = launch(true);
   mcp.child.stdin.write(JSON.stringify({
     jsonrpc: '2.0', id: 1, method: 'initialize', params: {
@@ -85,12 +87,10 @@ test('MCP and live helper share ownership and MCP exits on input EOF', { timeout
     }
   }) + '\n');
   await mcp.waitForOutput(/"serverInfo"/);
-  const duplicate = launch();
-  assert.equal((await duplicate.closed).code, 1);
+  mcp.child.stdin.write('{"jsonrpc":"2.0","id":2,"method":"tools/list"}\n');
+  await mcp.waitForOutput(/"tools":\[/);
   mcp.child.stdin.end();
   assert.equal((await mcp.closed).code, 0);
-  const live = launch();
-  await live.waitForOutput(/"ready":true/);
   live.child.stdin.end();
   assert.equal((await live.closed).code, 0);
 });

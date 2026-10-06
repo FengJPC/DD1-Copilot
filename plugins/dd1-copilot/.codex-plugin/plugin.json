@@ -1,0 +1,21 @@
+{
+  "name": "dd1-copilot",
+  "version": "0.2.2",
+  "description": "Play Darkest Dungeon 1 through compact observations, verified actions and durable campaign memory.",
+  "author": { "name": "FengJ", "url": "https://github.com/FengJPC" },
+  "homepage": "https://github.com/FengJPC/DD1-Copilot",
+  "repository": "https://github.com/FengJPC/DD1-Copilot",
+  "license": "MIT",
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "DD1 Copilot",
+    "shortDescription": "Play DD1 with verified actions and campaign memory.",
+    "longDescription": "Connects Codex to a locally installed DD1 game bridge. Provides compact and delta observations, hero and skill ID actions, verified combat transitions, persistent campaign records and model-authored reviews. Requires Windows, Node.js 24 or newer, an explicitly bound save, and the separately installed compatible game DLL.",
+    "developerName": "FengJ",
+    "category": "Games",
+    "capabilities": ["Interactive"],
+    "defaultPrompt": ["查看我的暗黑地牢存档，解释关键决策并继续游戏。"],
+    "brandColor": "#963D35"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "dd1-local",
+  "interface": { "displayName": "DD1 Copilot Local" },
+  "plugins": [{
+    "name": "dd1-copilot",
+    "source": { "source": "local", "path": "./build/dd1-copilot" },
+    "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+    "category": "Games"
+  }]
+}

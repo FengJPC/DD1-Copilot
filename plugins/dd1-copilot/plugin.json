@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "dd1-copilot",
+  "version": "0.2.2",
+  "description": "Play Darkest Dungeon 1 through compact observations, verified actions and durable campaign memory.",
+  "author": { "name": "FengJ", "url": "https://github.com/FengJPC" },
+  "repository": "https://github.com/FengJPC/DD1-Copilot",
+  "license": "MIT"
+}

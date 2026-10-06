@@ -8,7 +8,19 @@
 
 游戏存档、中间层事实、AI 复盘和临时遥测的保存边界，以及固定存档绑定、旧库备份/归档流程，见 [存储与保留规则](docs/architecture/005-storage-and-retention.md)。
 
-本轮更新已通过 113 项测试和 TypeScript 构建；结构拆分及确认弹窗已有城镇实测记录。新增的城镇资格、费用、疗养院原生操作及饰品读数需要匹配的本地修改版 DLL，仍待重启游戏实机验收，详见 [城镇修复与验收计划](docs/experiments/022-town-hardening-and-trinket-reminder.md)。
+## Codex 本地插件
+
+插件包含独立编译的 Copilot MCP、生产依赖和游戏操作技能。先安装 npm 依赖，再执行：
+
+```powershell
+npm run plugin:package
+.\scripts\configure-plugin.ps1 -FromProject
+.\scripts\install-plugin.ps1
+```
+
+`-FromProject` 导入已有 `launcher.local.json` 与 `memory.local.json`；首次设置可显式指定游戏和存档目录。插件设置与数据库存放在本机，缓存更新不会删除档案。安装后刷新/重启 Codex；若当前聊天尚未发现工具，进入新聊天。匹配的游戏 DLL 仍需单独部署，安装插件不会安装游戏或自动开始操作。详细前提、设置覆盖规则、验收范围见 [插件安装与结构](docs/architecture/006-codex-plugin.md)。
+
+当前 0.2.2 代码已通过 129 项测试和 TypeScript 检查；插件已完成独立 MCP 协议验证、本机安装及 Codex 宿主九项工具发现。修复了多聊天加载时的独占锁启动冲突，实际游戏指令仍由单个会话控制。结构拆分及确认弹窗已有城镇实测记录；城镇资格、费用、疗养院原生操作及饰品读数仍需匹配的本地修改版 DLL 和游戏实机核对，详见 [城镇修复与验收计划](docs/experiments/022-town-hardening-and-trinket-reminder.md)。
 
 > **初版发布范围**：本仓库发布 MIT 许可的 Copilot、Game MCP、状态归约、测试和开发脚本。运行时命令依赖本地修改的 Blindest Dungeon；由于上游尚未明确允许再发布修改版源码和二进制，修改版源码、DLL、游戏文件和实机日志暂不随仓库分发。这会使当前公开版本无法单独完成端到端构建，待取得明确授权后将以保留上游历史的独立 fork 补齐。来源、依赖许可证和核查证据见 [第三方声明](THIRD_PARTY_NOTICES.md) 与 [第三方源码许可审计](docs/licensing/001-third-party-source-audit.md)。
 

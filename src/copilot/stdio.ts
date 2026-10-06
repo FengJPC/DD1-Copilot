@@ -14,7 +14,7 @@ import { createDd1CopilotServer } from "./create-server.js";
 import { CopilotEngine } from "./engine.js";
 import { LocalGameGateway } from "./local-game-gateway.js";
 import { registerProcessShutdown } from './process-lifecycle.js';
-import { acquireRuntimeLease } from './runtime-lease.js';
+import { LeasedCommandTransport } from './leased-command-transport.js';
 import { CopilotSession } from './session.js';
 
 const configuredPath = process.env.DD1_BLINDEST_LOG?.trim();
@@ -27,9 +27,9 @@ if (!configuredPath) {
 const commandPipe = process.env.DD1_COMMAND_PIPE?.trim();
 const log = new CombatLogSource(resolve(configuredPath));
 const command = commandPipe
-  ? new NamedPipeCommandTransport(commandPipe)
+  ? new LeasedCommandTransport(new NamedPipeCommandTransport(commandPipe), commandPipe)
   : new UnavailableCommandTransport();
-const release = commandPipe ? await acquireRuntimeLease(commandPipe) : async () => { };
+const release = () => command instanceof LeasedCommandTransport ? command.close() : Promise.resolve();
 try {
   const engine = new CopilotEngine(new LocalGameGateway(log, command));
   const memory = CampaignMemoryStore.fromEnvironment();

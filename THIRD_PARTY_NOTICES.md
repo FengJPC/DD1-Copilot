@@ -69,16 +69,25 @@ The reference repository remains outside the public repository.
 
 ## JavaScript build and runtime dependencies
 
-The repository declares, but does not vendor, these npm packages:
+The source repository declares, but does not vendor, these npm packages.
+The generated local plugin package bundles the production dependency graph
+selected by `package-lock.json`, currently `@modelcontextprotocol/server`,
+`@modelcontextprotocol/core` and `zod`, with each package's original license
+file, notices and README intact. Development tools are excluded from the plugin.
 
-- `@modelcontextprotocol/server`: MIT
+- `@modelcontextprotocol/server` and `@modelcontextprotocol/core`: npm metadata
+  identifies MIT, but the installed 2.1.0 LICENSE describes an Apache-2.0/MIT
+  transition and CC-BY-4.0 for documentation; the full bundled license controls
 - `zod`: MIT
 - `@types/node`: MIT
 - `tsx`: MIT
 - `typescript`: Apache-2.0
 
 Their own license texts and notices apply when npm installs them. The root MIT
-license does not relicense those packages.
+license does not relicense those packages. `package-contents.json` records the
+locked dependency versions, package metadata licenses, integrity strings, and
+the SHA256 of every packaged file. Its metadata license labels are not a
+replacement for the original license texts.
 
 ## Game ownership and affiliation
 
