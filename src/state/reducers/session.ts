@@ -1,12 +1,13 @@
 import type { BlindestEvent } from '../../blindest/events.js';
 import type { GameState } from '../game-state.js';
+import { isBlockingPanelContext } from '../blocking-panel.js';
 import { clearSessionObservationState, raidSurfacePhase } from '../reducer-support.js';
 
 export function reduceSession(state: GameState, next: GameState, event: BlindestEvent): boolean {
   switch (event.kind) {
     case "context_changed":
       next.currentContext = event.context;
-      if (['dialog', 'tutorial', 'townevent', 'pause'].includes(event.context)) {
+      if (['dialog', 'tutorial', 'townevent', 'pause'].includes(event.context) || isBlockingPanelContext(event.context)) {
         if (state.phase !== 'modal') next.modalSourcePhase = state.phase;
       } else next.modalSourcePhase = undefined;
       if (event.context !== state.currentContext || event.context !== 'dialog') next.activeDialog = undefined;
@@ -50,7 +51,7 @@ export function reduceSession(state: GameState, next: GameState, event: Blindest
         event.context === "dialog" ||
         event.context === "townevent"
       ) next.phase = "modal";
-      else if (event.context === "pause") next.phase = "modal";
+      else if (event.context === "pause" || isBlockingPanelContext(event.context)) next.phase = "modal";
       else if (event.context === "inventory" || event.context === "map" || event.context === "ingame") {
         next.phase = raidSurfacePhase(next) ?? next.phase;
       }

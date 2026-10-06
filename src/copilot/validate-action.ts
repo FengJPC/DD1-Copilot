@@ -1,4 +1,5 @@
 import type { GameState } from "../state/game-state.js";
+import { isBlockingPanelContext } from '../state/blocking-panel.js';
 import { activityCandidate, canOpenBuildingUpgrades, facilityUpgradeFailure, heroUpgradeFailure, townPriceFailure, treatmentConfirmationFailure } from './town-availability.js';
 import { currentCombatant, inventoryTarget, resolveRequestedTarget, resolveSkill, roomPropHero } from "./identity.js";
 import type {
@@ -8,6 +9,9 @@ import { CURIO_ONLY_INVENTORY_ITEMS, actionableRoomProps, currentDecisionRoomId,
 
 export function validateAction(action: CopilotAction,
   state: GameState): string | undefined {
+  if (isBlockingPanelContext(state.currentContext) && action.kind !== 'dismiss_modal') {
+    return 'Close the character sheet or trinket inventory before issuing another action.';
+  }
   if (["use_inventory_item", "use_torch", "discard_inventory_item"].includes(action.kind) &&
     (state.loot?.active === true || state.currentContext === "itemuse" ||
       !["room", "traveling", "camp", "combat", "post_combat"].includes(state.phase))) {

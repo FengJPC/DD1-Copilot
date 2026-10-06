@@ -37,7 +37,7 @@ export function createDd1CopilotServer(
   session = new CopilotSession(engine, memory),
 ): McpServer {
   const server = new McpServer(
-    { name: "dd1-copilot", version: "0.2.2" },
+    { name: "dd1-copilot", version: "0.2.3" },
     {
       capabilities: { tools: {} },
       instructions: [

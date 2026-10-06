@@ -1,4 +1,5 @@
 import type { BlindestEvent } from '../blindest/events.js';
+import { isBlockingPanelContext } from './blocking-panel.js';
 import { reduceCamp } from './reducers/camp.js';
 import { reduceCircus } from './reducers/circus.js';
 import { reduceCombat } from './reducers/combat.js';
@@ -475,5 +476,7 @@ export function reduceGameState(state: GameState, event: BlindestEvent): GameSta
   for (const reduce of reducers) {
     if (reduce(state, next, event)) break;
   }
+  // A background town/embark snapshot must not expose controls under a panel.
+  if (isBlockingPanelContext(next.currentContext)) next.phase = 'modal';
   return next;
 }

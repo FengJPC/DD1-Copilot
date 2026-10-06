@@ -1,18 +1,22 @@
 import type { GameState } from "../state/game-state.js";
-import { canOpenBuildingUpgrades, facilityUpgradeFailure, heroUpgradeFailure, townPriceFailure, treatmentConfirmationFailure } from './town-availability.js';
+import { isBlockingPanelContext } from '../state/blocking-panel.js';
+import { buildingDetailsView, canOpenBuildingUpgrades, facilityUpgradeFailure, heroUpgradeFailure, townPriceFailure, treatmentConfirmationFailure } from './town-availability.js';
 import type { PendingCombatTransition } from './execution-types.js';
 import { currentActorView, currentCombatant } from "./identity.js";
 import { actionableRoomProps, currentDecisionRoomId, currentPhysicalArea, currentPhysicalTile, lootFitsExistingStack, MAP_DIRECTIONS, roomPropDecisionOptions, secretExitRoutes, skillIsUsableByCurrentActor, skillNeedsNoTarget } from './workflow-support.js';
 
 export function buildDecision(state: GameState, pendingCombatTransition?: PendingCombatTransition) {
   if (
-    state.phase === "modal" ||
+    state.phase === "modal" || isBlockingPanelContext(state.currentContext) ||
     state.currentContext === "tutorial" ||
     state.activeTutorial !== undefined
   ) {
     return {
       kind: "modal",
-      prompt: state.activeTutorial?.text ?? state.activeDialog?.text ?? "A modal is blocking input.",
+      prompt: state.activeTutorial?.text ?? state.activeDialog?.text ??
+        (state.currentContext === 'charsheet' ? 'Close the character sheet before operating the underlying screen.' :
+          state.currentContext === 'realminv' ? 'Close the trinket inventory before operating the underlying screen.' :
+            "A modal is blocking input."),
       options: [
         ...(state.activeDialog?.options ?? []).map(({ optionIndex, label }) => ({
           kind: 'choose_dialog_option' as const, optionIndex, label,
@@ -531,7 +535,7 @@ export function buildDecision(state: GameState, pendingCombatTransition?: Pendin
     };
   }
   if (state.phase === "building") {
-    const details = state.buildingDetails;
+    const details = buildingDetailsView(state);
     return {
       kind: "building",
       prompt: "Choose a verified building action by stable hero, option, item, or activity identity.",

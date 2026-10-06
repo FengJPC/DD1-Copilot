@@ -20,7 +20,7 @@ npm run plugin:package
 
 `-FromProject` 导入已有 `launcher.local.json` 与 `memory.local.json`；首次设置可显式指定游戏和存档目录。插件设置与数据库存放在本机，缓存更新不会删除档案。安装后刷新/重启 Codex；若当前聊天尚未发现工具，进入新聊天。匹配的游戏 DLL 仍需单独部署，安装插件不会安装游戏或自动开始操作。详细前提、设置覆盖规则、验收范围见 [插件安装与结构](docs/architecture/006-codex-plugin.md)。
 
-当前 0.2.2 代码已通过 129 项测试和 TypeScript 检查；插件已完成独立 MCP 协议验证、本机安装及 Codex 宿主九项工具发现。修复了多聊天加载时的独占锁启动冲突，实际游戏指令仍由单个会话控制。结构拆分及确认弹窗已有城镇实测记录；城镇资格、费用、疗养院原生操作及饰品读数仍需匹配的本地修改版 DLL 和游戏实机核对，详见 [城镇修复与验收计划](docs/experiments/022-town-hardening-and-trinket-reminder.md)。
+当前 0.2.3 修复了城镇台词造成的无效版本冲突、人物档案/饰品箱遮挡识别，以及 delta 中重复的任务说明。已通过 136 项测试和 TypeScript 检查；插件已有独立 MCP 协议验证与 Codex 宿主九项工具发现记录。0.2.3 还用本次真实日志确认饰品箱只返回关闭操作，后续游戏操作需刷新插件会话继续验收。实际状态变化仍拒绝旧指令，单会话控制与不确定动作保护保留；本次无需更换 DLL。城镇生命读数归一化、饰品装备接口仍待实机完善，详见 [恢复测试记录](docs/experiments/025-plugin-town-resume.md)。
 
 > **初版发布范围**：本仓库发布 MIT 许可的 Copilot、Game MCP、状态归约、测试和开发脚本。运行时命令依赖本地修改的 Blindest Dungeon；由于上游尚未明确允许再发布修改版源码和二进制，修改版源码、DLL、游戏文件和实机日志暂不随仓库分发。这会使当前公开版本无法单独完成端到端构建，待取得明确授权后将以保留上游历史的独立 fork 补齐。来源、依赖许可证和核查证据见 [第三方声明](THIRD_PARTY_NOTICES.md) 与 [第三方源码许可审计](docs/licensing/001-third-party-source-audit.md)。
 

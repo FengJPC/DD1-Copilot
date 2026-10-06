@@ -171,6 +171,9 @@ export function filterCopilotRecords(
         record.event.kind === "embark_state_observed" ||
         record.event.kind === "embark_location_observed" ||
         record.event.kind === "embark_quest_observed" ||
+        // The current quest details are already present in decision.options,
+        // including changed descriptions; do not repeat the entire text in delta.
+        record.event.kind === "embark_quest_detail_observed" ||
         record.event.kind === "inventory_snapshot_started" ||
         record.event.kind === "inventory_item_observed" ||
         record.event.kind === "inventory_snapshot_completed" ||

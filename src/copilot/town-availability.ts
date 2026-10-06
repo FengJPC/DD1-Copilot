@@ -2,6 +2,14 @@ import type { GameState } from '../state/game-state.js';
 
 type Details = NonNullable<GameState['buildingDetails']>;
 
+export function buildingDetailsView(state: GameState): GameState['buildingDetails'] {
+  const details = state.buildingDetails;
+  if (!details?.activityCandidates) return details;
+  return { ...details, activityCandidates: details.activityCandidates.filter(candidate =>
+    details.activities.some(activity => activity.activityId === candidate.activityId &&
+      activity.slot === candidate.slot && !activity.locked && !activity.eventLocked)) };
+}
+
 export function canOpenBuildingUpgrades(state: GameState): boolean {
   return state.phase === 'building' && state.buildingDetails?.mode === 0 &&
     state.buildingDetails.canUpgrade === true;

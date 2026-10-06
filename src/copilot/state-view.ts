@@ -2,6 +2,7 @@ import type {
   CombatLogSnapshot
 } from "../live/combat-log-source.js";
 import { buildDecision } from './decision.js';
+import { buildingDetailsView } from './town-availability.js';
 import type { PendingCombatTransition } from './execution-types.js';
 import { filterCopilotRecords } from "./filter.js";
 import { currentActorView } from "./identity.js";
@@ -116,7 +117,7 @@ export function projectState(snapshot: CombatLogSnapshot, mode: 'compact' | 'del
         locations: snapshot.state.townLocations,
       }
       : undefined,
-    buildingDetails: buildingRelevant ? snapshot.state.buildingDetails : undefined,
+    buildingDetails: buildingRelevant ? buildingDetailsView(snapshot.state) : undefined,
     buildingHeroes: buildingRelevant
       ? snapshot.state.buildingHeroes
       : undefined,

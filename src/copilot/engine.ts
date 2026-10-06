@@ -16,6 +16,7 @@ import type {
   GameGateway
 } from "./types.js";
 import { validateAction } from './validate-action.js';
+import { passiveRevisionAdvance } from './revision-guard.js';
 import type { WorkflowContext } from './workflow-context.js';
 import { actionSignature, COMBAT_TURN_ACTIONS } from './workflow-support.js';
 import { chooseCampMeal, finishCamp, useCampSkill } from './workflows/camp.js';
@@ -153,7 +154,8 @@ export class CopilotEngine {
     if (!before.source.available) return this.remember(signature,
       this.validationFailure(request, before, "The primary observation source is unavailable; no action was sent."));
     this.reconcilePendingCombatTransition(before.state);
-    if (request.expectedRevision !== before.revision) {
+    if (request.expectedRevision !== before.revision &&
+      !passiveRevisionAdvance(request.expectedRevision, before.revision, this.game.recordsAfter.bind(this.game))) {
       return this.remember(
         signature,
         this.validationFailure(
